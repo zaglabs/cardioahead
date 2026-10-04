@@ -2,7 +2,9 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 const localEnv = {
   CARDIOAHEAD_LOCAL_TEST: "true",
-  CARDIOAHEAD_LOCAL_PASSWORD: "local-e2e-password-only",
+  RESEND_API_KEY: "local-resend-test-key",
+  RESEND_FROM_EMAIL: "CardioAhead <login@cardioahead.test>",
+  CARDIOAHEAD_TEST_RESEND_URL: "http://127.0.0.1:3199/emails",
   CARDIOAHEAD_SESSION_SECRET: "e2e-only-secret-do-not-use-for-live-deployments",
   CARDIOAHEAD_LOCAL_DATA_DIR: path.join(
     process.cwd(),
@@ -15,6 +17,7 @@ export default defineConfig({
   testDir: "./tests",
   testMatch: "**/*.spec.ts",
   fullyParallel: true,
+  globalSetup: "./tests/global-setup.ts",
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   reporter: "list",
@@ -27,6 +30,11 @@ export default defineConfig({
     },
   ],
   webServer: [
+    {
+      command: "node tests/resend-server.mjs",
+      url: "http://127.0.0.1:3199/outbox",
+      reuseExistingServer: false,
+    },
     {
       command: "npm run start -- --port 3100",
       url: "http://127.0.0.1:3100",

@@ -1,55 +1,95 @@
-# Private upload pilot setup
+# Private storage and direct Resend login setup
 
-The screens now use real invitations and file uploads. The hosted flow remains closed until
-a dedicated Supabase project is connected. Only the three reviewed synthetic PDFs are accepted,
-verified by their SHA-256 hashes on the server. This restriction cannot be disabled by a browser flag.
+The hosted flow remains closed until its server-only credentials are configured.
+Only the three reviewed synthetic PDFs are accepted, verified by server-side SHA-256 hashes.
 
 ## Supabase
 
-1. Create a dedicated CardioAhead project. Choose the storage region with the clinic before
-   any real patient records are used. This stage is for synthetic data only.
-2. Run `supabase/migrations/202610040001_portal.sql` in the project's SQL editor.
-   It creates private tables, a private storage bucket and atomic PIN/upload/submission functions.
-3. Turn off public email signups. Create each clinic staff user in Auth > Users.
-4. Insert a membership with the matching Auth user ID and lower-case email:
-   `insert into public.clinic_staff(id,email,role) values ('AUTH-USER-UUID','staff@example.com','admin');`
-   Valid roles: admin, secretary, professor. These roles currently share one clinic's document access.
-5. Configure SMTP for email delivery. Set the Magic Link email template to contain
-   `{{ .Token }}` so staff can type the emailed OTP into the Hebrew login screen.
-   Supabase's default sender is restricted and should not be assumed to work for arbitrary staff emails.
-6. Set the site URL to https://www.cardioahead.com.
-7. Add SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and
-   CARDIOAHEAD_SESSION_SECRET to Vercel's production environment and redeploy.
-   The secret must contain at least 32 characters. Service keys remain server-only.
+Create a dedicated CardioAhead project. Run these migrations in order in its SQL editor:
 
-Database tables and the storage bucket intentionally have no browser/anon/authenticated access.
-Every application route verifies a server-held clinic membership or scoped patient session first.
-Never add broad public policies to make an authorization failure disappear.
+1. `supabase/migrations/202610040001_portal.sql`
+2. `supabase/migrations/202610040002_staff_otp.sql`
 
-## Test workflow
+The second migration removes the Supabase Auth dependency, invalidates previous staff sessions
+and requires previous staff to be approved again. It seeds **galadv73@gmail.com** as the only
+active administrator. Database constraints and a trigger protect this account.
+Do not create staff in Supabase Auth. No Auth SMTP or Magic Link template is needed.
 
-- Sign in at /admin with the registered staff email and emailed OTP.
-- Create an appointment with a fictional label; copy the invitation and PIN immediately.
-- Open the link in a different browser or private window. Supply the six-digit PIN.
-- Download PDFs from /test-documents, then select and upload two or three of them.
-- Check the saved list, confirm, and submit. The clinic inbox refreshes every 30 seconds
-  and can also be refreshed manually.
-- In the appointment, open/download the PDFs and mark the case reviewed.
-- Test wrong PINs (five failures lock the invitation), cancellation, logout, repeated
-  uploads and cross-patient access. Each invitation lasts seven days; sessions last two hours.
+RLS and denied browser grants cover all private tables, including OTP challenges.
+Only server-side service-role operations can call the authentication functions.
+The storage bucket is private; there are no public document URLs or browser storage policies.
 
-No AI report or email notification is claimed to exist at this stage.
+## Resend
 
-## Local verification
+Verify a sending domain in Resend, for example `cardioahead.com` or a dedicated subdomain.
+Add exactly the DNS records Resend shows, keeping the existing website DNS records.
+Create a sending API key, restricted to that domain where available.
+Set `RESEND_FROM_EMAIL` to `CardioAhead <login@cardioahead.com>` or another verified sender.
+No mailbox is required just to send from this address.
 
-The Playwright suite opts into a filesystem backend under a test-specific temporary directory.
-This uses the same server routes and real PDF bytes without requiring cloud credentials.
-It is unavailable whenever VERCEL is present, regardless of any local flag.
-The local clinic identity and password exist only for automated tests, never hosted access.
+The server calls [Resend's raw Send Email API](https://resend.com/docs/api-reference/emails/send-email)
+with fetch, Bearer authentication and an idempotency key.
+No SDK, webhook, Supabase SMTP or hosted authentication redirect is used.
+Emails contain only a login code and instructions, with no medical information or attachments.
 
-## Before real patient records
+## Vercel production variables
 
-Approve provider/region and privacy notice, enable individual staff MFA, add malware quarantine
-and scanning, patient identity verification through a trusted contact/OTP supplier, clinical
-retention/deletion and backup procedures, durable extraction jobs and Prof. Maor's report template.
-Replace the synthetic PDF whitelist only after those controls and isolation tests are complete.
+Add these in the project Settings > Environment Variables for Production:
+
+| Name | Value |
+| --- | --- |
+| NEXT_PUBLIC_SITE_URL | https://www.cardioahead.com |
+| SUPABASE_URL | The Supabase project HTTPS URL |
+| SUPABASE_SERVICE_ROLE_KEY | The server-side service-role key |
+| CARDIOAHEAD_SESSION_SECRET | A cryptographically random secret of at least 32 characters |
+| RESEND_API_KEY | The Resend sending API key |
+| RESEND_FROM_EMAIL | CardioAhead <login@cardioahead.com>, or your verified sender |
+
+Generate a secret locally with `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+Enter secrets directly in Vercel; never commit them or paste them into chat.
+Redeploy after setting variables. The application no longer uses a Supabase anon key.
+
+## Owner and staff
+
+1. At `/admin`, enter **galadv73@gmail.com** and verify the emailed six-digit code.
+2. Your small **ניהול משתמשים** button opens `/admin/users`.
+3. Each staff member verifies their own email at `/admin`. They see a waiting-for-approval screen.
+4. You select secretary or doctor/professor and approve them in user management.
+5. Staff check approval status or sign in again to enter the clinic.
+6. Suspension or rejection invalidates their sessions immediately. Existing records stay intact.
+
+Both staff roles currently share the single clinic's visit and document access.
+Only the owner manages users. A second administrator cannot be granted.
+
+## Authentication safeguards
+
+- Random six-digit numeric OTP including leading zeros, valid for ten minutes and one use.
+- Five incorrect attempts lock a challenge.
+- The requesting browser holds an HttpOnly challenge cookie.
+- Only HMAC code digests are stored, with the secret remaining server-side.
+- Database-atomic limits: one request per email per minute, five per email per hour,
+  and thirty per IP per hour. The Vercel platform IP header is hashed before storage.
+- Old challenge rows are removed after one hour on subsequent requests.
+- Two-hour opaque sessions stored as hashes; Secure, HttpOnly, SameSite=Strict cookies.
+- Same-origin mutations and backend membership checks on protected requests.
+- Resend API success means email acceptance, not proof of inbox delivery.
+
+## Upload test
+
+Create a fictional appointment, copy its personal link and separate patient PIN, then open it
+in another browser. Upload two PDFs from `/test-documents`, confirm and submit.
+Refresh the clinic inbox, open the documents and mark the case reviewed.
+No AI report or report email notification exists yet.
+
+## Local tests
+
+Playwright starts a loopback mock of the raw Resend API and private filesystem storage.
+Tests read actual random codes from the mock mailbox and exercise the regular authentication
+endpoints. There is no fixed OTP or password bypass.
+Local storage and the mock endpoint are disabled whenever VERCEL is present.
+
+## Real patient records
+
+The synthetic PDF restriction remains. Real-data launch needs the clinic's provider, region
+and data-handling decisions, identity verification, scanning, retention and backup procedures,
+clinical report validation and the professor's report template.

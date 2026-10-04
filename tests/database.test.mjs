@@ -16,12 +16,21 @@ test("private PostgreSQL schema enforces scoped sessions, PIN lockout, submissio
         "utf8",
       ),
     );
+    await db.exec(
+      fs.readFileSync(
+        path.join(
+          process.cwd(),
+          "supabase/migrations/202610040002_staff_otp.sql",
+        ),
+        "utf8",
+      ),
+    );
     const staff = randomUUID(),
       id = randomUUID(),
       locked = randomUUID();
     await db.query("insert into auth.users(id) values($1)", [staff]);
     await db.query(
-      "insert into public.clinic_staff values($1,'tester@example.com','admin')",
+      "insert into public.clinic_staff(id,email,role,status) values($1,'tester@example.com','secretary','active')",
       [staff],
     );
     const create = async (id, token) =>
@@ -149,6 +158,236 @@ test("private PostgreSQL schema enforces scoped sessions, PIN lockout, submissio
         )
       ).rows[0].ok,
       false,
+    );
+  } finally {
+    await db.close();
+  }
+});
+
+test("staff OTP and approvals enforce expiry, single use, lockout, limits and sole-owner protection", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(
+      "create role anon; create role authenticated; create role service_role; create schema auth; create table auth.users(id uuid primary key); create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);",
+    );
+    for (const name of [
+      "202610040001_portal.sql",
+      "202610040002_staff_otp.sql",
+    ])
+      await db.exec(
+        fs.readFileSync(
+          path.join(process.cwd(), "supabase/migrations", name),
+          "utf8",
+        ),
+      );
+    const owner = (
+      await db.query(
+        "select * from public.clinic_staff where email='galadv73@gmail.com'",
+      )
+    ).rows[0];
+    assert.equal(owner.role, "admin");
+    assert.equal(owner.status, "active");
+    await assert.rejects(() =>
+      db.query("update public.clinic_staff set role='secretary' where id=$1", [
+        owner.id,
+      ]),
+    );
+    await assert.rejects(() =>
+      db.query("delete from public.clinic_staff where id=$1", [owner.id]),
+    );
+    await assert.rejects(() =>
+      db.query(
+        "insert into public.clinic_staff(id,email,role,status) values($1,'evil@example.com','admin','active')",
+        [randomUUID()],
+      ),
+    );
+    const reserve = async (id, email = "staff@example.com", ip = "ip") =>
+      (
+        await db.query("select public.reserve_staff_otp($1::jsonb) as ok", [
+          JSON.stringify({
+            id,
+            email,
+            ip_hash: ip,
+            code_digest: "hashed-code",
+          }),
+        ])
+      ).rows[0].ok;
+    const deliver = async (id) =>
+      db.query("select public.staff_otp_delivery($1,true)", [id]);
+    const verify = async (id, email, digest, session) =>
+      (
+        await db.query("select public.verify_staff_otp($1,$2,$3,$4) as staff", [
+          id,
+          email,
+          digest,
+          session,
+        ])
+      ).rows[0].staff;
+    assert.equal(await reserve("first"), true);
+    assert.equal(await reserve("too-soon"), false);
+    assert.equal(
+      await verify("first", "staff@example.com", "hashed-code", "undelivered"),
+      null,
+    );
+    await deliver("first");
+    assert.equal(
+      await verify(
+        "first",
+        "different@example.com",
+        "hashed-code",
+        "wrong-email",
+      ),
+      null,
+    );
+    const staff = await verify(
+      "first",
+      "staff@example.com",
+      "hashed-code",
+      "pending-session",
+    );
+    assert.equal(staff.status, "pending");
+    assert.equal(staff.role, "secretary");
+    assert.equal(
+      await verify("first", "staff@example.com", "hashed-code", "replay"),
+      null,
+    );
+    const manage = async (actor, status, role = "professor") =>
+      (
+        await db.query("select public.manage_clinic_staff($1,$2,$3,$4) as ok", [
+          actor,
+          staff.id,
+          status,
+          role,
+        ])
+      ).rows[0].ok;
+    assert.equal(await manage(staff.id, "active"), false);
+    assert.equal(await manage(owner.id, "active", "admin"), false);
+    assert.equal(await manage(owner.id, "active"), true);
+    assert.equal(await manage(owner.id, "suspended"), true);
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.portal_sessions where staff_id=$1",
+          [staff.id],
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      await reserve("suspended", "staff@example.com", "new-ip"),
+      false,
+    );
+    await db.query(
+      "update public.staff_otp_challenges set created_at=now()-interval '2 minutes'",
+    );
+    assert.equal(await reserve("suspended", "staff@example.com"), true);
+    await deliver("suspended");
+    assert.equal(
+      await verify(
+        "suspended",
+        "staff@example.com",
+        "hashed-code",
+        "suspended-session",
+      ),
+      null,
+    );
+    assert.equal(await reserve("locked", "locked@example.com"), true);
+    await deliver("locked");
+    for (let i = 0; i < 5; i++)
+      assert.equal(
+        await verify("locked", "locked@example.com", "wrong", "failed-" + i),
+        null,
+      );
+    assert.equal(
+      await verify(
+        "locked",
+        "locked@example.com",
+        "hashed-code",
+        "correct-after-lock",
+      ),
+      null,
+    );
+    assert.equal(await reserve("expired", "expired@example.com"), true);
+    await deliver("expired");
+    await db.query(
+      "update public.staff_otp_challenges set expires_at=now()-interval '1 minute' where id='expired'",
+    );
+    assert.equal(
+      await verify(
+        "expired",
+        "expired@example.com",
+        "hashed-code",
+        "expired-session",
+      ),
+      null,
+    );
+    assert.equal(await reserve("owner", "galadv73@gmail.com"), true);
+    await deliver("owner");
+    assert.equal(
+      (
+        await verify(
+          "owner",
+          "galadv73@gmail.com",
+          "hashed-code",
+          "owner-session",
+        )
+      ).role,
+      "admin",
+    );
+    assert.equal(await reserve("race", "race@example.com"), true);
+    await deliver("race");
+    const results = await Promise.all([
+      verify("race", "race@example.com", "hashed-code", "race-1"),
+      verify("race", "race@example.com", "hashed-code", "race-2"),
+    ]);
+    assert.equal(results.filter(Boolean).length, 1);
+    for (let i = 0; i < 5; i++) {
+      await db.query(
+        "update public.staff_otp_challenges set created_at=now()-interval '2 minutes' where email='limited@example.com'",
+      );
+      assert.equal(
+        await reserve("limited-" + i, "limited@example.com", "limit-ip"),
+        true,
+      );
+    }
+    await db.query(
+      "update public.staff_otp_challenges set created_at=now()-interval '2 minutes' where email='limited@example.com'",
+    );
+    assert.equal(
+      await reserve("sixth", "limited@example.com", "limit-ip"),
+      false,
+    );
+    for (let i = 0; i < 30; i++)
+      assert.equal(
+        await reserve("ip-" + i, "person" + i + "@example.com", "shared-ip"),
+        true,
+      );
+    assert.equal(
+      await reserve("ip-limit", "extra@example.com", "shared-ip"),
+      false,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select relrowsecurity from pg_class where relname='staff_otp_challenges'",
+        )
+      ).rows[0].relrowsecurity,
+      true,
+    );
+    await db.exec("set role anon");
+    await assert.rejects(() =>
+      db.query("select * from public.staff_otp_challenges"),
+    );
+    await assert.rejects(() =>
+      db.query(
+        "select public.verify_staff_otp('first','staff@example.com','hashed-code','anon')",
+      ),
+    );
+    await assert.rejects(() =>
+      db.query(
+        "select public.manage_clinic_staff($1,$2,'active','professor')",
+        [owner.id, staff.id],
+      ),
     );
   } finally {
     await db.close();

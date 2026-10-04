@@ -6,16 +6,16 @@ export function localTestMode() {
   return !process.env.VERCEL && process.env.CARDIOAHEAD_LOCAL_TEST === "true";
 }
 export function configured() {
-  if (localTestMode())
-    return Boolean(
-      process.env.CARDIOAHEAD_LOCAL_PASSWORD &&
-      (process.env.CARDIOAHEAD_SESSION_SECRET?.length ?? 0) >= 32,
-    );
   return Boolean(
-    process.env.SUPABASE_URL &&
-    process.env.SUPABASE_ANON_KEY &&
-    process.env.SUPABASE_SERVICE_ROLE_KEY &&
+    (localTestMode() ||
+      (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) &&
     (process.env.CARDIOAHEAD_SESSION_SECRET?.length ?? 0) >= 32,
+  );
+}
+export function authConfigured() {
+  return (
+    configured() &&
+    Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL)
   );
 }
 export function secret() {

@@ -1,20 +1,21 @@
 import type { Metadata } from "next";
-import { configured, localTestMode } from "@/lib/portal/config";
-import { requireStaff, appointmentView } from "@/lib/portal/security";
+import { authConfigured, configured } from "@/lib/portal/config";
+import { requireIdentity, appointmentView } from "@/lib/portal/security";
 import { getStore } from "@/lib/portal/store";
 import { PortalFrame } from "@/components/portal-frame";
 import { ClinicLogin } from "@/components/clinic-login";
 import { ClinicPortal } from "@/components/clinic-portal";
+import { StaffPending } from "@/components/staff-pending";
 export const metadata: Metadata = { title: "סביבת המרפאה" };
 export const dynamic = "force-dynamic";
 export default async function AdminPage() {
-  const ready = configured();
-  let staff = null;
-  if (ready) {
+  let identity = null;
+  if (configured()) {
     try {
-      staff = await requireStaff();
+      identity = await requireIdentity();
     } catch {}
   }
+  const staff = identity?.status === "active" ? identity : null;
   const store = staff ? getStore() : null;
   const appointments = store ? await store.appointments() : [];
   const initialAppointments = store
@@ -28,8 +29,10 @@ export default async function AdminPage() {
     <PortalFrame>
       {staff ? (
         <ClinicPortal staff={staff} initialAppointments={initialAppointments} />
+      ) : identity ? (
+        <StaffPending email={identity.email} />
       ) : (
-        <ClinicLogin ready={ready} local={localTestMode()} />
+        <ClinicLogin ready={authConfigured()} />
       )}
     </PortalFrame>
   );

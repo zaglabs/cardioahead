@@ -1,7 +1,7 @@
-import { test, expect, type APIRequestContext } from "@playwright/test";
+import { test as base, expect, type APIRequestContext } from "@playwright/test";
 import fs from "node:fs";
 import path from "node:path";
-import { createHash } from "node:crypto";
+import { createHash, randomUUID } from "node:crypto";
 const origin = "http://127.0.0.1:3100";
 const headers = { origin };
 const fixture = path.join(
@@ -12,20 +12,57 @@ const second = path.join(
   process.cwd(),
   "public/test-documents/02-echocardiogram-he.pdf",
 );
-const email = "tester@cardioahead.local";
-const code = "local-e2e-password-only";
-async function staffLogin(request: APIRequestContext) {
-  const response = await request.post("/api/clinic/auth", {
-    headers,
-    data: { action: "verify", email, code },
-  });
-  expect(response.status()).toBe(200);
-}
+const email = "galadv73@gmail.com";
+const code = "123456";
+const test = base.extend<{ staff: APIRequestContext }>({
+  staff: async ({ playwright }, provide) => {
+    const owner = await playwright.request.newContext({
+      baseURL: origin,
+      storageState: "tmp/owner-auth.json",
+    });
+    const context = await playwright.request.newContext({ baseURL: origin });
+    const staffEmail = "upload-staff-" + randomUUID() + "@example.test";
+    expect(
+      (
+        await context.post("/api/clinic/auth", {
+          headers,
+          data: { action: "request", email: staffEmail },
+        })
+      ).status(),
+    ).toBe(200);
+    const mailbox = await context.get(
+      "http://127.0.0.1:3199/outbox?email=" + encodeURIComponent(staffEmail),
+    );
+    const otp = (await mailbox.json()).at(-1).text.match(/\b\d{6}\b/)[0];
+    expect(
+      (
+        await context.post("/api/clinic/auth", {
+          headers,
+          data: { action: "verify", email: staffEmail, code: otp },
+        })
+      ).status(),
+    ).toBe(200);
+    const list = await owner.get("/api/clinic/users");
+    const member = (await list.json()).users.find(
+      (v: { email: string }) => v.email === staffEmail,
+    );
+    expect(
+      (
+        await owner.patch("/api/clinic/users", {
+          headers,
+          data: { id: member.id, status: "active", role: "secretary" },
+        })
+      ).status(),
+    ).toBe(200);
+    await provide(context);
+    await context.dispose();
+    await owner.dispose();
+  },
+});
 async function invitation(
   request: APIRequestContext,
   label = "מטופל בדיקה 001",
 ) {
-  await staffLogin(request);
   const response = await request.post("/api/clinic/appointments", {
     headers,
     data: { patientLabel: label },
@@ -69,9 +106,13 @@ test("clinic creates an invitation; patient uploads two PDFs; clinic retrieves i
   page,
   browser,
 }) => {
+  await page
+    .context()
+    .addCookies(
+      JSON.parse(fs.readFileSync("tmp/owner-auth.json", "utf8")).cookies,
+    );
   await page.goto("/admin");
-  await page.getByLabel("סיסמת סביבת הבדיקה המקומית").fill(code);
-  await page.getByRole("button", { name: "כניסה למרפאה", exact: true }).click();
+
   await page.getByRole("button", { name: "הזמנה חדשה" }).click();
   const label = "מטופל בדיקה " + test.info().project.name;
   await page.getByLabel("שם / כינוי המטופל").fill(label);
@@ -160,7 +201,7 @@ test("unauthenticated users cannot list visits, upload or read documents", async
   ).toBe(401);
 });
 test("PIN failures persist, lock after five attempts, and expire/revoke access", async ({
-  request,
+  staff: request,
 }) => {
   const invite = await invitation(request, "מטופל נעילה");
   const token = invite.invitationUrl.split("/").pop();
@@ -194,7 +235,7 @@ test("PIN failures persist, lock after five attempts, and expire/revoke access",
   expect((await verify(request, fresh)).status()).toBe(401);
 });
 test("uploads reject unknown PDFs, duplicates, cross-origin writes and cross-patient documents", async ({
-  request,
+  staff: request,
   playwright,
 }) => {
   const first = await invitation(request, "תיק ראשון");

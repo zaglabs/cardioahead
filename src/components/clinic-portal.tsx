@@ -1,6 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { isAdmin } from "@/lib/portal/staff-access";
 import {
   CalendarDays,
   Check,
@@ -175,6 +177,12 @@ export function ClinicPortal({
             <p>הזמנות אישיות, מסמכים שהתקבלו ומעקב אחר ההכנה.</p>
           </div>
           <div className="clinic-tools">
+            {isAdmin(staff) && (
+              <Link href="/admin/users" className="admin-area-link">
+                <ShieldCheck size={16} />
+                ניהול משתמשים
+              </Link>
+            )}
             <button
               className="icon-button"
               onClick={() => void refresh()}

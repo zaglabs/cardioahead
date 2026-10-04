@@ -40,13 +40,6 @@ export function supabaseAdmin() {
     { auth: { persistSession: false, autoRefreshToken: false } },
   );
 }
-export function supabaseAuth() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
-}
 const checked = <T>(result: { data: T; error: unknown }) => {
   if (result.error) throw new Error("STORAGE_OPERATION_FAILED");
   return result.data;

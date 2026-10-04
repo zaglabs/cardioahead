@@ -12,7 +12,7 @@ Only the three visibly fictional PDFs in `public/test-documents/` are accepted.
 The server checks their SHA-256 hashes against `src/lib/test-documents.json`.
 This intentionally prevents use of the test pilot for real patient records.
 
-The hosted portal requires Supabase configuration. Without it, authentication/upload routes
+The hosted portal requires Supabase storage and Resend email configuration. Without it, authentication/upload routes
 fail closed and the clinic screen explains that connection is pending.
 The complete two-browser flow is tested locally against durable private test storage.
 The local backend is always disabled on Vercel.
@@ -20,10 +20,14 @@ The local backend is always disabled on Vercel.
 AI extraction, Prof. Maor's report template, automated email notifications and real-data launch
 controls remain the next stage. No report is fabricated from filenames or fixture selections.
 
+**galadv73@gmail.com** is the sole protected administrator. Verified staff wait for owner approval.
+Only the owner sees user management. Suspension revokes active sessions.
+
 ## Routes
 
 - `/`: Hebrew landing page
-- `/admin`: individual staff login and clinic appointment inbox
+- `/admin`: six-digit Resend email login and clinic appointment inbox
+- `/admin/users`: sole-owner staff approval and user management
 - `/invite/[token]`: code verification, PDF selection/upload, confirmation and submission
 - `/test-documents`: three fictional Hebrew PDFs and testing instructions
 - `/privacy`: current test-stage data handling
@@ -32,11 +36,11 @@ controls remain the next stage. No report is fabricated from filenames or fixtur
 ## Setup and hosting
 
 See [private storage and account setup](docs/storage-setup.md).
-Run the supplied SQL migration in a dedicated Supabase project, configure staff accounts/email OTP,
+Run both SQL migrations in a dedicated Supabase project, verify a sending domain in Resend,
 and add server-only service keys and a random secret to Vercel. Do not paste credentials into
 source code or commit environment files.
 
-Implementation follows [Supabase email OTP](https://supabase.com/docs/reference/javascript/auth-signinwithotp)
+Authentication uses the [Resend raw API](https://resend.com/docs/api-reference/emails/send-email)
 and [private Storage](https://supabase.com/docs/guides/storage/security/access-control).
 RLS is enabled on every clinical/session/audit table, with no anon/authenticated grants.
 Private data is served only through server routes after membership or patient-session checks.
@@ -66,7 +70,8 @@ desktop/mobile screens, a two-browser/two-PDF round trip, persisted submissions,
 bytes, unauthorized access, cross-patient isolation, cancellation, logout, duplicates and CSRF.
 A second server proves that hosted mode cannot enable local test credentials.
 
-Tests use a fresh local test directory. Their password and identity are never enabled on Vercel.
+Tests use a fresh local test directory and a loopback Resend HTTP mock with real random OTPs.
+There is no password bypass. Local storage and the mock endpoint are disabled on Vercel.
 `tmp/`, `.local-test-data/`, credentials and generated build output are ignored.
 
 ## Fictional PDFs

@@ -4,13 +4,18 @@ import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { MAX_DOCUMENTS, localTestMode } from "./config";
 import type { PortalStore } from "./store";
+import type { OtpChallenge } from "./auth-store";
+import { OWNER_EMAIL } from "./staff-access";
 import type {
+  Staff,
   Appointment,
   DocumentRecord,
   PortalSession,
   AuditEvent,
 } from "./types";
 type State = {
+  staff: Staff[];
+  otps: OtpChallenge[];
   appointments: Appointment[];
   documents: DocumentRecord[];
   sessions: PortalSession[];
@@ -24,7 +29,7 @@ const root = () =>
     /* turbopackIgnore: true */ process.env.CARDIOAHEAD_LOCAL_DATA_DIR ||
       ".local-test-data",
   );
-async function transaction<T>(
+export async function localTransaction<T>(
   fn: (state: State) => T | Promise<T>,
 ): Promise<T> {
   if (!localTestMode()) throw new Error("LOCAL_STORE_DISABLED");
@@ -38,6 +43,8 @@ async function transaction<T>(
         "state.json",
       );
       let state: State = {
+        staff: [owner],
+        otps: [],
         appointments: [],
         documents: [],
         sessions: [],
@@ -50,6 +57,8 @@ async function transaction<T>(
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+      state.staff ??= [owner];
+      state.otps ??= [];
       const result = await fn(state);
       const temporary = filename + "." + randomUUID() + ".tmp";
       await writeFile(temporary, JSON.stringify(state), { mode: 0o600 });
@@ -61,23 +70,27 @@ async function transaction<T>(
 }
 const active = (a: Appointment | undefined) =>
   Boolean(a && !a.revoked_at && Date.parse(a.expires_at) > Date.now());
-const testStaff = {
+const owner: Staff = {
   id: "00000000-0000-4000-8000-000000000001",
-  email: "tester@cardioahead.local",
-  role: "admin" as const,
+  email: OWNER_EMAIL,
+  role: "admin",
+  status: "active",
+  created_at: new Date().toISOString(),
 };
 export const localStore: PortalStore = {
   async staff(id) {
-    return id === testStaff.id ? testStaff : null;
+    return localTransaction((s) => s.staff.find((v) => v.id === id) || null);
   },
   async staffByEmail(email) {
-    return email === testStaff.email ? testStaff : null;
+    return localTransaction(
+      (s) => s.staff.find((v) => v.email === email) || null,
+    );
   },
   appointment: (id) =>
-    transaction((s) => s.appointments.find((a) => a.id === id) || null),
-  appointments: () => transaction((s) => [...s.appointments].reverse()),
+    localTransaction((s) => s.appointments.find((a) => a.id === id) || null),
+  appointments: () => localTransaction((s) => [...s.appointments].reverse()),
   createAppointment: (a) =>
-    transaction((s) => {
+    localTransaction((s) => {
       s.appointments.push(a);
       s.audit.push({
         event: "invitation_created",
@@ -87,7 +100,7 @@ export const localStore: PortalStore = {
       });
     }),
   verifyPatient: (tokenHash, digest, session) =>
-    transaction((s) => {
+    localTransaction((s) => {
       const a = s.appointments.find((a) => a.token_hash === tokenHash);
       if (!a || !active(a) || a.failed_attempts >= 5) return false;
       if (a.pin_digest !== digest) {
@@ -105,21 +118,23 @@ export const localStore: PortalStore = {
       return true;
     }),
   session: (hash) =>
-    transaction((s) => s.sessions.find((v) => v.session_hash === hash) || null),
+    localTransaction(
+      (s) => s.sessions.find((v) => v.session_hash === hash) || null,
+    ),
   createSession: (value) =>
-    transaction((s) => {
+    localTransaction((s) => {
       s.sessions.push(value);
     }),
   deleteSession: (hash) =>
-    transaction((s) => {
+    localTransaction((s) => {
       s.sessions = s.sessions.filter((v) => v.session_hash !== hash);
     }),
   documents: (id) =>
-    transaction((s) => s.documents.filter((d) => d.appointment_id === id)),
+    localTransaction((s) => s.documents.filter((d) => d.appointment_id === id)),
   document: (id) =>
-    transaction((s) => s.documents.find((d) => d.id === id) || null),
+    localTransaction((s) => s.documents.find((d) => d.id === id) || null),
   saveDocument: (record, bytes) =>
-    transaction(async (s) => {
+    localTransaction(async (s) => {
       const a = s.appointments.find((a) => a.id === record.appointment_id);
       if (!a || !active(a) || a.status !== "invited")
         throw new Error("UPLOAD_CLOSED");
@@ -153,7 +168,7 @@ export const localStore: PortalStore = {
     );
   },
   submit: (id) =>
-    transaction((s) => {
+    localTransaction((s) => {
       const a = s.appointments.find((a) => a.id === id);
       if (
         !a ||
@@ -172,7 +187,7 @@ export const localStore: PortalStore = {
       return true;
     }),
   revoke: (id) =>
-    transaction((s) => {
+    localTransaction((s) => {
       const a = s.appointments.find((a) => a.id === id);
       if (a) {
         a.revoked_at = new Date().toISOString();
@@ -185,7 +200,7 @@ export const localStore: PortalStore = {
       }
     }),
   review: (id) =>
-    transaction((s) => {
+    localTransaction((s) => {
       const a = s.appointments.find((a) => a.id === id);
       if (a?.status === "submitted") {
         a.status = "reviewed";
@@ -197,7 +212,7 @@ export const localStore: PortalStore = {
       }
     }),
   audit: (value) =>
-    transaction((s) => {
+    localTransaction((s) => {
       s.audit.push({ ...value, at: new Date().toISOString() });
     }),
 };

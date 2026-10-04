@@ -10,6 +10,7 @@ import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
 import { configured, localTestMode, secret } from "./config";
 import { getStore } from "./store";
+import { isAdmin } from "./staff-access";
 import type {
   AppointmentView,
   DocumentView,
@@ -33,7 +34,7 @@ export const pinDigest = (tokenHash: string, pin: string) =>
     .update(tokenHash + ":" + pin)
     .digest("hex");
 export const randomToken = () => randomBytes(32).toString("base64url");
-export const newPin = () => String(randomInt(100000, 1000000));
+export const newPin = () => String(randomInt(0, 1000000)).padStart(6, "0");
 export function equal(a: string, b: string) {
   const x = Buffer.from(a);
   const y = Buffer.from(b);
@@ -51,7 +52,9 @@ export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   const expected =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (localTestMode() ? new URL(request.url).origin : "https://www.cardioahead.com");
+    (localTestMode()
+      ? new URL(request.url).origin
+      : "https://www.cardioahead.com");
   if (!origin || !expected || origin !== new URL(expected).origin)
     throw new PortalError(
       403,
@@ -127,16 +130,36 @@ export async function session(kind: "staff" | "patient") {
     ? record
     : null;
 }
-export async function requireStaff() {
+export async function requireIdentity() {
   const current = await session("staff");
   const staff = current?.staff_id
     ? await getStore().staff(current.staff_id)
     : null;
-  if (!staff)
+  if (!staff || staff.status === "suspended" || staff.status === "rejected")
     throw new PortalError(
       401,
       "LOGIN_REQUIRED",
       "יש להיכנס עם חשבון צוות המרפאה.",
+    );
+  return staff;
+}
+export async function requireStaff() {
+  const staff = await requireIdentity();
+  if (staff.status !== "active")
+    throw new PortalError(
+      403,
+      "APPROVAL_REQUIRED",
+      "החשבון ממתין לאישור מנהל המערכת.",
+    );
+  return staff;
+}
+export async function requireAdmin() {
+  const staff = await requireStaff();
+  if (!isAdmin(staff))
+    throw new PortalError(
+      403,
+      "ADMIN_REQUIRED",
+      "הפעולה זמינה למנהל המערכת בלבד.",
     );
   return staff;
 }

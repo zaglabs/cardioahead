@@ -1,7 +1,9 @@
+import { cookies } from "next/headers";
 import {
   randomToken,
+  newPin,
   hash,
-  equal,
+  pinDigest,
   sameOrigin,
   body,
   text,
@@ -12,74 +14,107 @@ import {
   clearSession,
   PortalError,
 } from "@/lib/portal/security";
-import { getStore, supabaseAuth } from "@/lib/portal/store";
-import { localTestMode } from "@/lib/portal/config";
+import { authConfigured, localTestMode } from "@/lib/portal/config";
+import { authStore } from "@/lib/portal/auth-store";
+import { sendLoginCode } from "@/lib/portal/resend";
+const challengeCookie = "cardioahead_otp";
 export async function POST(request: Request) {
   try {
     sameOrigin(request);
     ensureConfigured();
     const input = await body(request);
+    const jar = await cookies();
     if (input.action === "logout") {
       await clearSession("staff");
+      jar.delete(challengeCookie);
       return json({ ok: true });
     }
+    if (!authConfigured())
+      throw new PortalError(
+        503,
+        "EMAIL_NOT_CONFIGURED",
+        "שירות שליחת קודי הכניסה עדיין אינו מחובר.",
+      );
     const email = text(input.email, 254).toLowerCase();
-    const staff = await getStore().staffByEmail(email);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      throw new PortalError(400, "BAD_EMAIL", "הזינו כתובת דוא״ל תקינה.");
+    const store = authStore();
     if (input.action === "request") {
-      if (staff && !localTestMode()) {
-        const { error } = await supabaseAuth().auth.signInWithOtp({
-          email,
-          options: { shouldCreateUser: false },
-        });
-        if (error)
-          throw new PortalError(
-            429,
-            "TRY_LATER",
-            "לא ניתן לשלוח קוד כרגע. נסו שוב בעוד דקה.",
-          );
+      const token = randomToken();
+      const id = hash(token);
+      const code = newPin();
+      // The platform header is trusted only when served by Vercel; no raw IP is stored.
+      const ip = process.env.VERCEL
+        ? request.headers
+            .get("x-vercel-forwarded-for")
+            ?.split(",")[0]
+            ?.trim() || "unknown"
+        : "local";
+      const reserved = await store.reserve({
+        id,
+        email,
+        code_digest: pinDigest("staff:" + id + ":" + email, code),
+        ip_hash: pinDigest("staff-ip", ip),
+        created_at: new Date().toISOString(),
+        expires_at: new Date(Date.now() + 600000).toISOString(),
+        attempts: 0,
+        delivered: false,
+        consumed: false,
+      });
+      if (!reserved)
+        throw new PortalError(
+          429,
+          "TRY_LATER",
+          "בקשות רבות מדי. המתינו דקה ונסו שוב; אם הבעיה נמשכת, נסו מאוחר יותר.",
+        );
+      try {
+        await sendLoginCode(email, code, id);
+        await store.delivery(id, true);
+      } catch (error) {
+        await store.delivery(id, false);
+        throw error;
       }
+      jar.set(challengeCookie, token, {
+        httpOnly: true,
+        secure: !localTestMode(),
+        sameSite: "strict",
+        path: "/",
+        maxAge: 600,
+      });
       return json({
         ok: true,
-        message: "אם הכתובת רשומה לצוות המרפאה, יישלח אליה קוד כניסה.",
+        retryAfter: 60,
+        message: "קוד כניסה נשלח לכתובת שהזנתם.",
       });
     }
     if (input.action !== "verify")
       throw new PortalError(400, "BAD_REQUEST", "בקשה לא תקינה.");
-    const code = text(input.code, 128);
-    let authenticated = false;
-    if (localTestMode())
-      authenticated = Boolean(
-        staff && equal(code, process.env.CARDIOAHEAD_LOCAL_PASSWORD!),
-      );
-    else if (staff) {
-      const { data, error } = await supabaseAuth().auth.verifyOtp({
-        email,
-        token: code,
-        type: "email",
-      });
-      authenticated =
-        !error &&
-        data.user?.id === staff.id &&
-        data.user.email?.toLowerCase() === staff.email;
-    }
-    if (!staff || !authenticated)
+    const code = text(input.code, 6);
+    const token = jar.get(challengeCookie)?.value;
+    if (!/^\d{6}$/.test(code) || !token)
       throw new PortalError(
         401,
         "INVALID_CODE",
-        "הקוד לא תקין או שהחשבון אינו מורשה.",
+        "הקוד אינו תקין או שפג תוקפו. בקשו קוד חדש.",
       );
-    const token = randomToken();
-    const expires = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    await getStore().createSession({
-      session_hash: hash(token),
-      kind: "staff",
-      staff_id: staff.id,
-      appointment_id: null,
-      expires_at: expires.toISOString(),
-    });
-    await getStore().audit({ event: "staff_signed_in", actor_id: staff.id });
-    await setSession("staff", token, expires);
-    return json({ ok: true });
+    const id = hash(token);
+    const sessionToken = randomToken();
+    const staff = await store.verify(
+      id,
+      email,
+      pinDigest("staff:" + id + ":" + email, code),
+      hash(sessionToken),
+    );
+    if (!staff)
+      throw new PortalError(
+        401,
+        "INVALID_CODE",
+        "הקוד אינו תקין, פג תוקפו או שהגישה לחשבון אינה מאושרת.",
+      );
+    await clearSession("staff");
+    await setSession("staff", sessionToken, new Date(Date.now() + 7200000));
+    jar.delete(challengeCookie);
+    return json({ ok: true, status: staff.status });
   } catch (error) {
     return failure(error);
   }

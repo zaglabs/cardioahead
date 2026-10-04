@@ -1,8 +1,11 @@
 export type AppointmentStatus = "invited" | "submitted" | "reviewed";
+export type StaffStatus = "pending" | "active" | "suspended" | "rejected";
 export type Staff = {
   id: string;
   email: string;
   role: "admin" | "secretary" | "professor";
+  status: StaffStatus;
+  created_at: string;
 };
 export type Appointment = {
   id: string;
