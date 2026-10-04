@@ -17,7 +17,7 @@ verified by their SHA-256 hashes on the server. This restriction cannot be disab
 5. Configure SMTP for email delivery. Set the Magic Link email template to contain
    `{{ .Token }}` so staff can type the emailed OTP into the Hebrew login screen.
    Supabase's default sender is restricted and should not be assumed to work for arbitrary staff emails.
-6. Set the site URL to https://cardioahead.com.
+6. Set the site URL to https://www.cardioahead.com.
 7. Add SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY and
    CARDIOAHEAD_SESSION_SECRET to Vercel's production environment and redeploy.
    The secret must contain at least 32 characters. Service keys remain server-only.

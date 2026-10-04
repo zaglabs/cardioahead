@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 export const metadata: Metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "https://cardioahead.com",
+    process.env.NEXT_PUBLIC_SITE_URL || "https://www.cardioahead.com",
   ),
   title: {
     default: "CardioAhead | הכנה לביקור אצל פרופ׳ אלעד מאור",

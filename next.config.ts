@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     return [{
       source: "/:path*",
       has: [{ type: "host", value: "cardioahead.vercel.app" }],
-      destination: "https://cardioahead.com/:path*",
+      destination: "https://www.cardioahead.com/:path*",
       permanent: true,
     }];
   },

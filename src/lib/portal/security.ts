@@ -51,7 +51,7 @@ export function sameOrigin(request: Request) {
   const origin = request.headers.get("origin");
   const expected =
     process.env.NEXT_PUBLIC_SITE_URL ||
-    (localTestMode() ? new URL(request.url).origin : "https://cardioahead.com");
+    (localTestMode() ? new URL(request.url).origin : "https://www.cardioahead.com");
   if (!origin || !expected || origin !== new URL(expected).origin)
     throw new PortalError(
       403,
