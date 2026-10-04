@@ -1,15 +1,14 @@
-// Deliberately fail closed. Do not parse, persist, or forward any request body.
-function unavailable() {
-  return Response.json(
+import { json } from "@/lib/portal/security";
+export function POST() {
+  return json(
     {
-      error: "INTAKE_UNAVAILABLE",
-      message: "Medical document intake is not configured.",
+      error: "INVITATION_REQUIRED",
+      message: "העלאה מתבצעת דרך ההזמנה האישית מהמרפאה.",
     },
-    { status: 503, headers: { "Cache-Control": "no-store" } },
+    401,
   );
 }
-export const GET = unavailable;
-export const POST = unavailable;
-export const PUT = unavailable;
-export const PATCH = unavailable;
-export const DELETE = unavailable;
+export const GET = POST;
+export const PUT = POST;
+export const PATCH = POST;
+export const DELETE = POST;

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     template: "%s | CardioAhead",
   },
   description:
-    "מרחב ההכנה לביקור אצל פרופ׳ אלעד מאור. גרסת הדגמה — השירות עדיין אינו מקבל מסמכים רפואיים.",
+    "מרחב ההכנה לביקור אצל פרופ׳ אלעד מאור. ריכוז מסמכים רפואיים לקראת הפגישה.",
   robots: { index: false, follow: false },
 };
 export const viewport: Viewport = { width: "device-width", initialScale: 1 };

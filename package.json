@@ -8,18 +8,23 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:database": "node --test tests/database.test.mjs"
   },
   "engines": {
     "node": "24.x"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.117.2",
+    "lucide-react": "^0.577.0",
     "next": "16.3.8",
+    "pdf-lib": "^1.17.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
-    "lucide-react": "^0.577.0"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.8",
     "@playwright/test": "^1.58.2",
     "@types/node": "^24.0.0",
     "@types/react": "^19.2.0",

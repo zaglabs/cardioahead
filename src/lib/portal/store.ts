@@ -1,0 +1,171 @@
+import "server-only";
+import { createClient } from "@supabase/supabase-js";
+import { BUCKET, localTestMode } from "./config";
+import { localStore } from "./local-store";
+import type {
+  Appointment,
+  DocumentRecord,
+  PortalSession,
+  Staff,
+  AuditEvent,
+} from "./types";
+
+export interface PortalStore {
+  staff(id: string): Promise<Staff | null>;
+  staffByEmail(email: string): Promise<Staff | null>;
+  appointment(id: string): Promise<Appointment | null>;
+  appointments(): Promise<Appointment[]>;
+  createAppointment(value: Appointment): Promise<void>;
+  verifyPatient(
+    tokenHash: string,
+    digest: string,
+    session: PortalSession,
+  ): Promise<boolean>;
+  session(hash: string): Promise<PortalSession | null>;
+  createSession(value: PortalSession): Promise<void>;
+  deleteSession(hash: string): Promise<void>;
+  documents(appointmentId: string): Promise<DocumentRecord[]>;
+  document(id: string): Promise<DocumentRecord | null>;
+  saveDocument(record: DocumentRecord, bytes: Buffer): Promise<void>;
+  readDocument(record: DocumentRecord): Promise<Buffer>;
+  submit(id: string): Promise<boolean>;
+  revoke(id: string): Promise<void>;
+  review(id: string): Promise<void>;
+  audit(value: AuditEvent): Promise<void>;
+}
+export function supabaseAdmin() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
+export function supabaseAuth() {
+  return createClient(
+    process.env.SUPABASE_URL!,
+    process.env.SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false } },
+  );
+}
+const checked = <T>(result: { data: T; error: unknown }) => {
+  if (result.error) throw new Error("STORAGE_OPERATION_FAILED");
+  return result.data;
+};
+export function getStore(): PortalStore {
+  if (localTestMode()) return localStore;
+  const db = supabaseAdmin();
+  return {
+    async staff(id) {
+      return checked(
+        await db.from("clinic_staff").select("*").eq("id", id).maybeSingle(),
+      ) as Staff | null;
+    },
+    async staffByEmail(email) {
+      return checked(
+        await db
+          .from("clinic_staff")
+          .select("*")
+          .eq("email", email)
+          .maybeSingle(),
+      ) as Staff | null;
+    },
+    async appointment(id) {
+      return checked(
+        await db.from("appointments").select("*").eq("id", id).maybeSingle(),
+      ) as Appointment | null;
+    },
+    async appointments() {
+      return checked(
+        await db
+          .from("appointments")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .limit(200),
+      ) as Appointment[];
+    },
+    async createAppointment(value) {
+      checked(await db.from("appointments").insert(value));
+    },
+    async verifyPatient(tokenHash, digest, session) {
+      return (
+        checked(
+          await db.rpc("verify_patient_pin", {
+            p_token_hash: tokenHash,
+            p_pin_digest: digest,
+            p_session_hash: session.session_hash,
+          }),
+        ) === true
+      );
+    },
+    async session(hash) {
+      return checked(
+        await db
+          .from("portal_sessions")
+          .select("*")
+          .eq("session_hash", hash)
+          .maybeSingle(),
+      ) as PortalSession | null;
+    },
+    async createSession(value) {
+      checked(await db.from("portal_sessions").insert(value));
+    },
+    async deleteSession(hash) {
+      checked(
+        await db.from("portal_sessions").delete().eq("session_hash", hash),
+      );
+    },
+    async documents(id) {
+      return checked(
+        await db
+          .from("documents")
+          .select("*")
+          .eq("appointment_id", id)
+          .order("created_at"),
+      ) as DocumentRecord[];
+    },
+    async document(id) {
+      return checked(
+        await db.from("documents").select("*").eq("id", id).maybeSingle(),
+      ) as DocumentRecord | null;
+    },
+    async saveDocument(record, bytes) {
+      checked(
+        await db.storage.from(BUCKET).upload(record.storage_path, bytes, {
+          contentType: "application/pdf",
+          upsert: false,
+        }),
+      );
+      try {
+        checked(await db.rpc("attach_document", { p_record: record }));
+      } catch (error) {
+        await db.storage.from(BUCKET).remove([record.storage_path]);
+        throw error;
+      }
+    },
+    async readDocument(record) {
+      const blob = checked(
+        await db.storage.from(BUCKET).download(record.storage_path),
+      );
+      if (!blob) throw new Error("DOCUMENT_NOT_FOUND");
+      return Buffer.from(await blob.arrayBuffer());
+    },
+    async submit(id) {
+      return checked(await db.rpc("submit_appointment", { p_id: id })) === true;
+    },
+    async revoke(id) {
+      checked(await db.rpc("revoke_invitation", { p_id: id }));
+    },
+    async review(id) {
+      checked(
+        await db
+          .from("appointments")
+          .update({ status: "reviewed" })
+          .eq("id", id)
+          .eq("status", "submitted"),
+      );
+    },
+    async audit(value) {
+      checked(await db.from("audit_events").insert(value));
+    },
+  };
+}

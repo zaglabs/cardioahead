@@ -9,3 +9,6 @@ test-results/
 *.tsbuildinfo
 *.log
 .DS_Store
+
+.local-test-data/
+tmp/

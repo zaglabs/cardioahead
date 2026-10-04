@@ -55,8 +55,8 @@ export default function Home() {
               <br className="desktop-break" /> להגיע לפגישה עם תמונה ברורה יותר.
             </p>
             <div className="hero-actions">
-              <Link className="button button-dark" href="/demo/patient">
-                ראו איך מכינים את הביקור <ArrowLeft size={18} />
+              <Link className="button button-dark" href="#how-it-works">
+                איך מכינים את הביקור <ArrowLeft size={18} />
               </Link>
               <a className="text-link" href="#how-it-works">
                 איך זה עובד <ArrowUpLeft size={16} />
@@ -117,7 +117,7 @@ export default function Home() {
             <p>
               לא צריך לפתוח חשבון חדש.
               <br />
-              התהליך המתוכנן מתחיל בהזמנה אישית מהמרפאה.
+              התהליך מתחיל בהזמנה אישית מהמרפאה.
             </p>
           </div>
           <div className="steps-grid">
@@ -148,7 +148,8 @@ export default function Home() {
             <p>
               CardioAhead נבנה כדי לתמוך בהכנה לפגישה עם פרופ׳ מאור.
               <br />
-              סיכום המסמכים מיועד לעיון הרופא, וההחלטות הרפואיות מתקבלות על ידו.
+              המסמכים זמינים לעיון צוות המרפאה, וההחלטות הרפואיות מתקבלות על ידי
+              הרופא.
             </p>
             <a
               className="text-link"
@@ -179,10 +180,11 @@ export default function Home() {
           </div>
           <div className="faq-list">
             <details>
-              <summary>האם אפשר כבר להעלות מסמכים?</summary>
+              <summary>איך מעלים את המסמכים?</summary>
               <p>
-                עדיין לא. זו גרסת הדגמה של הממשק. העלאת מסמכים תיפתח לאחר השלמת
-                מערכת האחסון והגישה למטופלים.
+                העלאת המסמכים מתבצעת דרך קישור אישי וקוד גישה שמקבלים מהמרפאה.
+                בשלב הבדיקות אפשר להעלות רק את המסמכים הפיקטיביים של
+                CardioAhead.
               </p>
             </details>
             <details>
@@ -195,31 +197,33 @@ export default function Home() {
             <details>
               <summary>איך נכנסים למרחב האישי?</summary>
               <p>
-                בגרסה הפעילה תקבלו קישור אישי מהמרפאה ותאמתו את הכניסה באמצעות
-                קוד חד־פעמי.
+                צוות המרפאה ימסור לכם קישור אישי וקוד גישה. פותחים את הקישור
+                ומזינים את הקוד כדי להיכנס לתיק הביקור.
               </p>
             </details>
             <details>
               <summary>האם הסיכום מחליף את הפגישה עם הרופא?</summary>
               <p>
-                הסיכום נועד להכין את המידע לעיון הרופא. הוא אינו אבחנה ואינו
-                מחליף ייעוץ או בדיקה רפואית.
+                המסמכים נועדו להכין את המידע לעיון הרופא. סיכום אוטומטי יתווסף
+                בהמשך ולא יחליף ייעוץ או בדיקה רפואית.
               </p>
             </details>
           </div>
         </section>
         <section className="bottom-cta wrap">
           <div>
-            <span className="eyebrow">מבט ראשון על המערכת</span>
-            <h2>בואו לראות את התהליך.</h2>
-            <p>הדגמה עם מידע פיקטיבי בלבד, למטופל ולצוות המרפאה.</p>
+            <span className="eyebrow">לקראת הפגישה</span>
+            <h2>קיבלתם קישור מהמרפאה?</h2>
+            <p>
+              פתחו את הקישור האישי שקיבלתם, והכינו את המסמכים בזמן שנוח לכם.
+            </p>
           </div>
           <div>
-            <Link className="button button-dark" href="/demo/patient">
-              הדגמת הכנה לביקור <ArrowLeft size={18} />
+            <Link className="button button-dark" href="#how-it-works">
+              איך מכינים את הביקור <ArrowLeft size={18} />
             </Link>
-            <Link className="text-link" href="/demo/clinic">
-              הדגמת סביבת המרפאה <ArrowUpLeft size={16} />
+            <Link className="text-link" href="/admin">
+              כניסה לצוות המרפאה <ArrowUpLeft size={16} />
             </Link>
           </div>
         </section>

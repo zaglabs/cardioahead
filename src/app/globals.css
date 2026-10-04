@@ -2092,3 +2092,244 @@ p {
     font-size: 0.875rem;
   }
 }
+
+/* Forms and private intake screens share the readable type scale. */
+.portal-context {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1rem;
+  color: var(--muted);
+}
+.login-card {
+  width: min(100%, 520px);
+  margin: 30px auto 60px;
+}
+.login-card > .completion-icon {
+  margin-bottom: 24px;
+}
+.login-card h1 {
+  font-size: 2.25rem;
+  margin-block: 16px;
+}
+.portal-form,
+.created-invitation {
+  display: grid;
+  gap: 20px;
+}
+.portal-form label,
+.created-invitation label {
+  display: grid;
+  gap: 8px;
+  font-size: 1rem;
+  color: var(--ink);
+}
+.portal-form input,
+.created-invitation input {
+  width: 100%;
+  min-width: 0;
+  min-height: 52px;
+  padding: 12px 14px;
+  border: 1px solid #cbd6c5;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  font-size: 1.125rem;
+}
+.portal-form .button {
+  justify-self: start;
+}
+.form-error {
+  padding: 14px 16px;
+  margin-block: 16px;
+  background: #fff0ec;
+  border: 1px solid #e8c3b7;
+  border-radius: 8px;
+  color: #8b3b27;
+  font-size: 1rem;
+}
+.form-note {
+  color: var(--muted);
+  font-size: 0.9375rem;
+}
+.file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+}
+.demo-upload-area .button {
+  margin-top: 12px;
+}
+.document-option > span:nth-child(2) {
+  flex: 1;
+}
+.document-option strong,
+.document-preview-row strong {
+  overflow-wrap: anywhere;
+}
+.upload-queue-row {
+  display: grid;
+  gap: 6px;
+  padding: 16px;
+  border: 1px solid #e8c3b7;
+  border-radius: 8px;
+  font-size: 1rem;
+}
+.upload-queue-row span {
+  color: #8b3b27;
+  font-size: 0.9375rem;
+}
+.upload-queue-row .text-button {
+  justify-self: start;
+}
+.consent-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 20px 0;
+  font-size: 1rem;
+}
+.consent-check input {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  accent-color: var(--ink);
+  margin-top: 4px;
+}
+.consent-check a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.session-exit {
+  margin-top: 28px;
+}
+.clinic-tools {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.pilot-note {
+  margin-top: 0;
+}
+.invitation-form {
+  grid-template-columns: 1fr 1fr;
+  margin-top: 24px;
+}
+.invitation-form .button {
+  grid-column: 1 / -1;
+}
+.created-invitation {
+  margin-top: 20px;
+}
+.created-invitation .text-button {
+  justify-self: start;
+}
+.created-invitation .invitation-code {
+  max-width: 180px;
+  font-size: 1.5rem;
+  letter-spacing: 0.16em;
+}
+.empty-state {
+  font-size: 1rem;
+  padding: 20px 10px;
+}
+.case-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px;
+  border-top: 1px solid var(--line);
+  margin-top: 28px;
+  padding-top: 22px;
+}
+.document-preview-row {
+  min-width: 0;
+}
+.document-preview-row > div {
+  flex: 1;
+  min-width: 0;
+}
+.clinic-sidebar-bottom small {
+  overflow-wrap: anywhere;
+  max-width: 130px;
+}
+.test-document-list {
+  display: grid;
+  gap: 16px;
+  margin-block: 30px;
+}
+.prose-page li {
+  font-size: 1.0625rem;
+  margin-block: 12px;
+  color: var(--muted);
+}
+.completion .info-box {
+  margin-bottom: 25px;
+}
+.completion .info-box p {
+  margin: 0;
+}
+@media (max-width: 900px) {
+  .portal-context {
+    display: none;
+  }
+}
+@media (max-width: 680px) {
+  .login-card {
+    margin: 12px auto 30px;
+  }
+  .invitation-form {
+    grid-template-columns: 1fr;
+  }
+  .clinic-heading {
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+  .clinic-tools {
+    gap: 8px;
+  }
+  .clinic-heading .button {
+    font-size: 1rem;
+  }
+  .portal-form .button {
+    width: 100%;
+    justify-self: stretch;
+  }
+  .demo-upload-area {
+    padding-inline: 12px;
+  }
+  .demo-upload-area .button {
+    max-width: 100%;
+  }
+  .patient-panel {
+    min-width: 0;
+  }
+  .case-detail .empty-report h2 {
+    font-size: 1.75rem;
+  }
+}
+.invitation-preview > .created-invitation {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: stretch;
+  justify-content: normal;
+}
+.clinic-layout,
+.clinic-workspace,
+.case-board,
+.cases-panel,
+.case-detail {
+  min-width: 0;
+}
+.clinic-tools .icon-button {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+}
+.clinic-tools .icon-button:hover {
+  background: var(--sage);
+}

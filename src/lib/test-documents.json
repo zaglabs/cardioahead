@@ -1,0 +1,17 @@
+[
+  {
+    "filename": "01-cardiology-referral-he.pdf",
+    "sha256": "29bef2a9d7547e310c2eb1feffa351d14f596f85c3c8bc9d0b0c664f319d7048",
+    "label": "סיכום ביקור והפניה לקרדיולוג"
+  },
+  {
+    "filename": "02-echocardiogram-he.pdf",
+    "sha256": "975c92cf09cb10b7b3b026489369985c2b8ad337cfced98af2e4c9aeb1312bf7",
+    "label": "דו״ח אקו לב פיקטיבי"
+  },
+  {
+    "filename": "03-medication-history-he.pdf",
+    "sha256": "ccacf6df1151dedcccd3a7c963a158a8234374386ee22b65cf2de034ddc7a62a",
+    "label": "רקע רפואי ורשימת תרופות פיקטיבית"
+  }
+]
