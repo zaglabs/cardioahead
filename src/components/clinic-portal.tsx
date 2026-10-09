@@ -3,6 +3,7 @@ import { useLanguage } from "@/components/language-provider";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { ClinicalInsights } from "./clinical-insights";
 import { isAdmin } from "@/lib/portal/staff-access";
 import {
   CalendarDays,
@@ -42,7 +43,9 @@ export function ClinicPortal({
   );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
-  const [tab, setTab] = useState<"documents" | "report">("documents");
+  const [tab, setTab] = useState<"documents" | "report" | "presentation">(
+    "documents",
+  );
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(t("מטופל בדיקה 001"));
   const [date, setDate] = useState("");
@@ -466,6 +469,15 @@ export function ClinicPortal({
                     <Heart size={15} />
                     {t("סיכום לקראת הביקור")}
                   </button>
+                  <button
+                    role="tab"
+                    aria-selected={tab === "presentation"}
+                    onClick={() => setTab("presentation")}
+                    className={tab === "presentation" ? "active" : ""}
+                  >
+                    <Heart size={15} />
+                    {t("המחשה / מצגת")}
+                  </button>
                 </div>
                 <div className="report-panel">
                   {tab === "documents" ? (
@@ -511,15 +523,12 @@ export function ClinicPortal({
                       )}
                     </>
                   ) : (
-                    <div className="empty-report">
-                      <Heart size={30} />
-                      <h3>{t("סיכום המסמכים יתווסף כאן.")}</h3>
-                      <p>
-                        {t(
-                          "השלב הבא הוא קריאת המסמכים והכנת טיוטה במבנה שיספק פרופ׳ מאור. כרגע נשמרים ומוצגים קובצי המקור.",
-                        )}
-                      </p>
-                    </div>
+                    <ClinicalInsights
+                      key={active.id}
+                      appointment={active}
+                      staff={staff}
+                      mode={tab}
+                    />
                   )}
                   <div className="case-actions">
                     {active.status === "submitted" && (

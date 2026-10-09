@@ -1,3 +1,4 @@
+import clinical from "./clinical.en.json";
 import common from "./common.en.json";
 import publicPages from "./public.en.json";
 import patient from "./patient.en.json";
@@ -9,6 +10,7 @@ export const english: Record<string, string> = {
   ...publicPages,
   ...patient,
   ...clinic,
+  ...clinical,
 };
 const hebrew = Object.fromEntries(
   Object.entries(english).map(([he, en]) => [en, he]),

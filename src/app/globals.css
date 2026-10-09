@@ -2864,3 +2864,503 @@ p {
     border-right: 0;
   }
 }
+
+.clinical-insights {
+  padding-block: 12px;
+  min-width: 0;
+}
+.clinical-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 60px 10px;
+  color: var(--muted);
+}
+.spin {
+  animation: clinical-spin 1.5s linear infinite;
+}
+@keyframes clinical-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.clinical-report-heading h3,
+.presentation-proposal h3 {
+  font-size: 1.75rem;
+  margin: 12px 0 18px;
+  line-height: 1.4;
+}
+.artifact-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.875rem;
+  margin: 12px 0 20px;
+}
+.draft-label,
+.reviewed-label {
+  border-radius: 20px;
+  padding: 6px 12px;
+  background: #fff4d9;
+  color: #6f521f;
+}
+.reviewed-label {
+  background: #e5f0e8;
+  color: #245237;
+}
+.clinical-format-note {
+  padding: 16px;
+  background: var(--sage);
+  border-radius: 10px;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+.clinical-overview,
+.clinical-sections ul,
+.clinical-questions ul {
+  padding: 0;
+  list-style: none;
+  margin: 0;
+}
+.clinical-overview {
+  background: #f5f7f1;
+  padding: 20px;
+  border-radius: 12px;
+  margin: 22px 0;
+}
+.clinical-fact {
+  border-bottom: 1px solid var(--line);
+  padding: 12px 0;
+}
+.clinical-fact:last-child {
+  border-bottom: 0;
+}
+.clinical-fact > p {
+  font-size: 1rem;
+  line-height: 1.85;
+  margin: 0 0 8px;
+}
+.fact-date {
+  font-size: 0.875rem;
+  color: var(--muted);
+}
+.source-evidence {
+  font-size: 0.875rem;
+  color: var(--muted);
+  margin-top: 8px;
+}
+.source-evidence summary {
+  cursor: pointer;
+  color: var(--ink);
+  min-height: 30px;
+}
+.source-evidence a {
+  display: block;
+  overflow-wrap: anywhere;
+  line-height: 1.7;
+  padding: 6px 0;
+  text-decoration: underline;
+}
+.source-evidence blockquote {
+  margin: 6px 0 12px;
+  padding: 10px 14px;
+  border-inline-start: 3px solid #bfcebf;
+  background: white;
+  line-height: 1.8;
+}
+.clinical-sections > article,
+.clinical-questions {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  margin-top: 24px;
+}
+.clinical-sections h4,
+.clinical-questions h4,
+.clinical-source-list h4 {
+  font-size: 1.2rem;
+  margin: 0 0 14px;
+}
+.missing-information {
+  font-size: 0.9375rem;
+  line-height: 1.8;
+  color: #6c6752;
+  background: #f8f6ed;
+  padding: 10px 14px;
+  border-radius: 8px;
+}
+.clinical-questions li {
+  font-size: 1rem;
+  line-height: 1.8;
+  margin: 10px 0;
+}
+.clinical-limitations {
+  margin: 22px 0;
+  color: var(--muted);
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+.clinical-source-list {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  margin-top: 30px;
+}
+.clinical-source-list h4 {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+.clinical-source-list > a {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 13px 12px;
+  margin-top: 10px;
+  font-size: 0.9375rem;
+  min-width: 0;
+}
+.clinical-source-list > a > span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  flex: 1;
+}
+.clinical-source-list small {
+  font-size: 0.875rem;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.presentation-proposal {
+  padding: 10px 0;
+}
+.presentation-proposal > p {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: var(--muted);
+}
+.presentation-proposal h4 {
+  font-size: 1.2rem;
+  margin-top: 26px;
+}
+.presentation-proposal ol {
+  list-style: none;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+  margin: 18px 0 26px;
+}
+.presentation-proposal li {
+  display: flex;
+  gap: 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 17px;
+}
+.presentation-proposal li > span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  background: var(--sage);
+  border-radius: 50%;
+}
+.presentation-proposal li strong {
+  font-size: 1rem;
+}
+.presentation-proposal li p {
+  font-size: 0.9375rem;
+  color: var(--muted);
+  line-height: 1.8;
+  margin: 8px 0 0;
+}
+.presentation-viewer {
+  background: #123c34;
+  color: #eff5ec;
+  border-radius: 16px;
+  overflow: hidden;
+  min-width: 0;
+  box-shadow: 0 20px 60px #163b341a;
+}
+.presentation-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid #ffffff25;
+  padding: 14px 18px;
+  font-size: 0.875rem;
+  color: #c2d8ca;
+}
+.presentation-toolbar .icon-button,
+.slide-navigation .icon-button {
+  color: #e8f0e5;
+  border: 1px solid #ffffff30;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.presentation-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 24px 22px 8px;
+}
+.presentation-narrative .eyebrow {
+  color: #b4d5bb;
+}
+.presentation-narrative h3 {
+  font-size: 1.8rem;
+  line-height: 1.3;
+  margin: 16px 0;
+}
+.presentation-narrative > p {
+  font-size: 1.0625rem;
+  line-height: 1.8;
+  color: #d7e6da;
+}
+.presentation-graphic {
+  min-width: 0;
+  background: radial-gradient(ellipse at center, #38665699, transparent 70%);
+  border-radius: 16px;
+}
+.clinical-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 340px;
+}
+.recorded-measurement {
+  display: inline-grid;
+  gap: 8px;
+  background: #ffffff10;
+  border: 1px solid #ffffff25;
+  border-radius: 12px;
+  padding: 14px 18px;
+  margin: 12px 0;
+}
+.recorded-measurement > span {
+  font-size: 0.875rem;
+  color: #cbdfd0;
+}
+.recorded-measurement strong {
+  font-size: 1.5rem;
+  color: #f1d3a8;
+}
+.presentation-facts {
+  padding: 16px 22px 4px;
+  display: grid;
+  gap: 12px;
+}
+.presentation-facts > div {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  color: #dce8da;
+}
+.presentation-facts svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.presentation-facts p {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+.presentation-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 20px 22px;
+}
+.presentation-controls .text-button {
+  color: #e3eee1;
+  font-size: 0.9375rem;
+  min-height: 44px;
+}
+.slide-navigation {
+  display: flex;
+  gap: 10px;
+  margin-inline-start: auto;
+}
+.slide-navigation button:disabled {
+  opacity: 0.35;
+}
+.presentation-evidence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 0 22px 14px;
+}
+.presentation-evidence a {
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+  color: #bddec7;
+  text-decoration: underline;
+}
+.presentation-disclaimer {
+  font-size: 0.875rem;
+  line-height: 1.8;
+  color: #bfd4c7;
+  padding: 16px 22px;
+  margin: 0;
+  background: #06251d40;
+  border-top: 1px solid #ffffff20;
+}
+.saved-presentation-note {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 20px 0;
+  color: var(--muted);
+}
+.saved-presentation-note svg {
+  flex-shrink: 0;
+  margin-top: 5px;
+  color: var(--ink);
+}
+.saved-presentation-note p {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.8;
+}
+.care-visual {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 50px 12px;
+}
+.care-visual > div {
+  background: #a2c5ad22;
+  border: 1px solid #a2c5ad66;
+  border-radius: 18px;
+  text-align: center;
+  padding: 22px 12px;
+  font-size: 2rem;
+  color: #e4d1a4;
+  flex: 1;
+}
+.care-visual span {
+  display: block;
+  margin-top: 14px;
+  font-size: 0.9375rem;
+  color: #e4ecdf;
+  line-height: 1.7;
+}
+.scene-motion .ventricle-emphasis {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ventricle-pulse 2.4s ease-in-out infinite;
+}
+.scene-motion .rhythm-node {
+  animation: rhythm-glow 2s ease-in-out infinite;
+}
+.scene-motion .valve-leaf {
+  transform-box: fill-box;
+  transform-origin: top center;
+  animation: valve-pulse 2.4s ease-in-out infinite;
+}
+@keyframes ventricle-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(0.91);
+  }
+}
+@keyframes rhythm-glow {
+  50% {
+    opacity: 0.35;
+  }
+}
+@keyframes valve-pulse {
+  50% {
+    transform: scaleY(0.6);
+  }
+}
+.presentation-viewer:fullscreen {
+  width: 100%;
+  height: 100%;
+  padding: 26px;
+  border-radius: 0;
+  overflow: auto;
+}
+.presentation-viewer:fullscreen .presentation-stage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr);
+  align-items: center;
+  gap: 35px;
+}
+.presentation-viewer:fullscreen .presentation-narrative h3 {
+  font-size: clamp(2rem, 3.5vw, 3.5rem);
+}
+.presentation-viewer:fullscreen .presentation-narrative > p {
+  font-size: 1.3rem;
+}
+.presentation-viewer:fullscreen .clinical-scene {
+  max-height: 65vh;
+}
+.presentation-viewer:fullscreen .presentation-facts {
+  font-size: 1.2rem;
+}
+[dir="ltr"] .slide-navigation svg {
+  transform: scaleX(-1);
+}
+@media (max-width: 680px) {
+  .presentation-stage,
+  .presentation-controls {
+    padding-inline: 16px;
+  }
+  .presentation-facts {
+    padding-inline: 16px;
+  }
+  .presentation-narrative h3 {
+    font-size: 1.6rem;
+  }
+  .care-visual {
+    gap: 8px;
+    padding: 25px 8px;
+  }
+  .care-visual > div {
+    padding: 18px 8px;
+    font-size: 1.5rem;
+  }
+  .clinical-source-list > a {
+    flex-wrap: wrap;
+  }
+  .presentation-viewer:fullscreen {
+    padding: 10px;
+  }
+  .presentation-viewer:fullscreen .presentation-stage {
+    display: flex;
+    flex-direction: column;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .spin,
+  .scene-motion * {
+    animation: none !important;
+  }
+}
+.presentation-narrative h3 {
+  color: #f3f6ee;
+}
+.presentation-facts p {
+  color: #dce8da;
+}
+[dir="ltr"] .stat-grid > div > svg {
+  left: auto;
+  right: 18px;
+}
+@media (max-width: 680px) {
+  .stat-grid > div > svg {
+    display: none;
+  }
+}

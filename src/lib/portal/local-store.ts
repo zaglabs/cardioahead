@@ -4,6 +4,7 @@ import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
 import path from "node:path";
 import { MAX_DOCUMENTS, localTestMode } from "./config";
 import type { PortalStore } from "./store";
+import type { AnalysisRecord, PresentationRecord } from "@/lib/clinical/types";
 import type { OtpChallenge } from "./auth-store";
 import { OWNER_EMAIL } from "./staff-access";
 import type {
@@ -14,6 +15,8 @@ import type {
   AuditEvent,
 } from "./types";
 type State = {
+  analyses: AnalysisRecord[];
+  presentations: PresentationRecord[];
   staff: Staff[];
   otps: OtpChallenge[];
   appointments: Appointment[];
@@ -43,6 +46,8 @@ export async function localTransaction<T>(
         "state.json",
       );
       let state: State = {
+        analyses: [],
+        presentations: [],
         staff: [owner],
         otps: [],
         appointments: [],
@@ -57,6 +62,8 @@ export async function localTransaction<T>(
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+      state.analyses ??= [];
+      state.presentations ??= [];
       state.staff ??= [owner];
       state.otps ??= [];
       const result = await fn(state);

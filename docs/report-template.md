@@ -23,4 +23,4 @@ to this public repository.
 
 AI draft status must remain visible. Do not reproduce a clinician signature or indicate
 approval until the professor has actually reviewed and approved the report.
-The temporary demo sections in the current code are not the final template.
+The current six-section source-cited draft is a provisional format, not the final template.

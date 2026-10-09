@@ -1,23 +1,28 @@
-# Bilingual clinic portal - implementation status
+# Clinic summaries and saved explanations - implementation status
 
 Hosted pilot:
-- Supabase is connected through Vercel Marketplace and both migrations have been applied.
-- Resend delivery, the sender address and session secret are configured in Production.
-- Live OTP requests were accepted and the owner confirmed the clinic flow works.
-- Only the three reviewed fictional PDFs are accepted; real-patient uploads remain blocked.
+- Supabase is connected and the owner applied all three migrations.
+- Resend email OTP works; the owner confirmed the clinic upload flow.
+- Claude is the chosen default, with ANTHROPIC_API_KEY saved in Vercel.
+- The owner explicitly approved processing fictional test PDFs. Both upload and AI worker
+  enforce the reviewed PDF hashes; filenames and patient labels are excluded from AI metadata.
 
 Implemented:
-- Hebrew and English landing, patient, clinic, admin, privacy and help screens.
-- Top-bar language selector, remembered preference, shareable lang=en/he URLs and matching page direction.
-- Localised OTP emails, API errors, dates, status labels and accessibility text.
-- Invitation introduction with the landing page heart illustration, preparation instructions and clinic help.
-- Independent patient-language selection when clinic staff create an invitation.
-- Language switching preserves the login step, draft invitation and uploaded files.
-- Sole protected administrator galadv73@gmail.com, approved staff roles and session-revoking suspension.
-- Private storage, scoped patient invitations, access-code lockout, audits and document review.
-- Database checks and 28 desktop/mobile browser tests.
+- Hebrew/English website, patient portal, clinic workspace and user management.
+- Source-cited provisional pre-visit reports, six clinical sections, missing information,
+  questions, conflicts and clinician review status.
+- Background summary preparation after patient submission; durable leases and bounded retry.
+- Claude Messages and optional OpenAI Responses provider integrations.
+- Simulation / presentation proposals shown before creation.
+- Doctor/admin-only Create presentation, private saved slide record and repeat-open reuse.
+- Optional motion, full-screen viewing and bilingual SVG educational schematics.
+- Private document access, protected sole admin, scoped invitations and access audit records.
+- 32 desktop/mobile tests plus four schema/database checks.
 
 Next:
-- Prof. Maor’s anonymised report sample, source-aware extraction and durable AI processing.
-- Authenticated report notifications without medical email attachments.
-- Real-data launch controls and the clinic’s provider, retention and privacy decisions.
+- Prof. Maor's actual report template and clinical review of generated examples.
+- Authenticated report notifications and any real-data launch decisions.
+- Higher-fidelity image-based anatomy if actual imaging and an approved workflow are provided.
+
+Presentations are source-based educational schematics, not patient anatomy reconstructions,
+flow measurements, ECG readings or predicted treatment results. Real-patient uploads remain blocked.

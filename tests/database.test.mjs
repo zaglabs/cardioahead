@@ -393,3 +393,164 @@ test("staff OTP and approvals enforce expiry, single use, lockout, limits and so
     await db.close();
   }
 });
+
+test("clinical records serialize analysis and presentation creation and reject non-clinician access", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(
+      "create role anon; create role authenticated; create role service_role; create schema auth; create table auth.users(id uuid primary key); create schema storage; create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);",
+    );
+    for (const name of [
+      "202610040001_portal.sql",
+      "202610040002_staff_otp.sql",
+      "202610090003_clinical_records.sql",
+    ])
+      await db.exec(
+        fs.readFileSync(
+          path.join(process.cwd(), "supabase/migrations", name),
+          "utf8",
+        ),
+      );
+    const owner = (
+      await db.query("select id from public.clinic_staff where role='admin'")
+    ).rows[0].id;
+    const secretary = randomUUID(),
+      appointment = randomUUID(),
+      token = randomUUID(),
+      stale = randomUUID();
+    await db.query(
+      "insert into public.clinic_staff(id,email,role,status) values($1,'secretary@example.test','secretary','active')",
+      [secretary],
+    );
+    await db.query(
+      "insert into public.appointments(id,patient_label,token_hash,pin_digest,expires_at,created_by) values($1,'fictional','clinical-token','pin',now()+interval '7 days',$2)",
+      [appointment, owner],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.claim_visit_analysis($1,'h','[]',$2) ok",
+          [appointment, token],
+        )
+      ).rows[0].ok,
+      false,
+    );
+    await db.query(
+      "update public.appointments set status='submitted' where id=$1",
+      [appointment],
+    );
+    await db.query("select public.queue_visit_analysis($1)", [appointment]);
+    assert.equal(
+      (
+        await db.query(
+          "select public.claim_visit_analysis($1,'h','[]',$2) ok",
+          [appointment, token],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.claim_visit_analysis($1,'h','[]',$2) ok",
+          [appointment, stale],
+        )
+      ).rows[0].ok,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.finish_visit_analysis($1,$2,$3,'[]','test-model') ok",
+          [
+            appointment,
+            stale,
+            JSON.stringify({ presentation: { eligible: true } }),
+          ],
+        )
+      ).rows[0].ok,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.finish_visit_analysis($1,$2,$3,'[]','test-model') ok",
+          [
+            appointment,
+            token,
+            JSON.stringify({ presentation: { eligible: true } }),
+          ],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (await db.query("select count(*)::int n from public.visit_presentations"))
+        .rows[0].n,
+      0,
+    );
+    await assert.rejects(() =>
+      db.query("select public.save_visit_presentation($1,$2,'{}')", [
+        appointment,
+        secretary,
+      ]),
+    );
+    const first = (
+      await db.query(
+        "select public.save_visit_presentation($1,$2,'{}') result",
+        [appointment, owner],
+      )
+    ).rows[0].result;
+    const second = (
+      await db.query(
+        "select public.save_visit_presentation($1,$2,'{}') result",
+        [appointment, owner],
+      )
+    ).rows[0].result;
+    assert.equal(first.reused, false);
+    assert.equal(second.reused, true);
+    assert.equal(first.record.id, second.record.id);
+    assert.equal(
+      (await db.query("select count(*)::int n from public.visit_presentations"))
+        .rows[0].n,
+      1,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.review_visit_artifact($1,$2,'summary') ok",
+          [appointment, secretary],
+        )
+      ).rows[0].ok,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.review_visit_artifact($1,$2,'summary') ok",
+          [appointment, owner],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.review_visit_artifact($1,$2,'presentation') ok",
+          [appointment, owner],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    await db.exec("set role anon");
+    await assert.rejects(() => db.query("select * from public.visit_analysis"));
+    await assert.rejects(() =>
+      db.query("select * from public.visit_presentations"),
+    );
+    await assert.rejects(() =>
+      db.query("select public.queue_visit_analysis($1)", [appointment]),
+    );
+  } finally {
+    await db.close();
+  }
+});

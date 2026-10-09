@@ -17,8 +17,9 @@ fail closed and the clinic screen explains that connection is pending.
 The complete two-browser flow is tested locally against durable private test storage.
 The local backend is always disabled on Vercel.
 
-AI extraction, Prof. Maor's report template, automated email notifications and real-data launch
-controls remain the next stage. No report is fabricated from filenames or fixture selections.
+Source-cited AI drafts and clinician-requested saved presentations are implemented.
+Prof. Maor's exact report template, email notifications and real-data launch controls remain next.
+See [clinical processing and presentation setup](docs/clinical-analysis.md).
 
 **galadv73@gmail.com** is the sole protected administrator. Verified staff wait for owner approval.
 Only the owner sees user management. Suspension revokes active sessions.
@@ -46,7 +47,7 @@ forms, sign-in verification and uploaded documents intact.
 ## Setup and hosting
 
 See [private storage and account setup](docs/storage-setup.md).
-Run both SQL migrations in a dedicated Supabase project, verify a sending domain in Resend,
+Run the first two SQL migrations for sign-in/storage and the clinical-records migration for AI drafts in a dedicated Supabase project, verify a sending domain in Resend,
 and add server-only service keys and a random secret to Vercel. Do not paste credentials into
 source code or commit environment files.
 
