@@ -281,24 +281,45 @@ test("Claude reads actual approved PDF bytes through Messages and persists the s
   await patient.dispose();
 });
 
-test("failed summaries show the actual failure instead of a preparing message", async ({page,playwright}) => {
+test("summary heartbeat follows processing state and stops on failure", async ({page,playwright}) => {
   const owner=await playwright.request.newContext({baseURL:origin,storageState:"tmp/owner-auth.json"});
   const label="Failure UI "+test.info().project.name;
   const invitation=await (await owner.post("/api/clinic/appointments",{
     headers,data:{patientLabel:label,language:"en"},
   })).json();
   await page.context().addCookies(JSON.parse(fs.readFileSync("tmp/owner-auth.json","utf8")).cookies);
+  let state = "generating";
+  await page.route("**/api/clinic/appointments", async route => {
+    const response = await route.fetch();
+    const result = await response.json();
+    result.appointments = result.appointments.map((a: {id:string,status:string}) =>
+      a.id === invitation.appointment.id ? {...a,status:"submitted"} : a);
+    await route.fulfill({response,json:result});
+  });
   await page.route("**/api/clinic/appointments/"+invitation.appointment.id+"/analysis",async route=>{
     if(route.request().method()!=="GET") throw new Error("A failed report must not automatically retry");
     await route.fulfill({json:{
-      analysis:{status:"failed",summary:null,sources:[],error_code:"AI_REQUEST_FORMAT",attempts:1},
+      analysis:{status:state,summary:null,sources:[],error_code:state === "failed" ? "AI_REQUEST_FORMAT" : null,attempts:1},
       presentation:null,configured:true,can_resume:false,
     }});
   });
   await page.goto("/admin?lang=en");
+  await page.getByRole("button", {name:"Refresh appointments"}).click();
   await page.locator(".case-card").filter({hasText:label}).click();
   await page.getByRole("tab",{name:"Pre-visit summary"}).click();
-  await expect(page.getByRole("heading",{name:"Summary preparation failed."})).toBeVisible();
+  await expect(page.getByRole("heading",{name:"Preparing the document summary."})).toBeVisible();
+  await expect(page.locator(".empty-report")).toHaveAttribute("aria-busy","true");
+  const heart=page.locator(".summary-heart-loader");
+  await expect(heart).toBeVisible();
+  expect(await heart.evaluate(el=>getComputedStyle(el).animationName)).toBe("summary-heartbeat");
+  await page.emulateMedia({reducedMotion:"reduce"});
+  expect(await heart.evaluate(el=>getComputedStyle(el).animationName)).toBe("none");
+  await page.emulateMedia({reducedMotion:"no-preference"});
+  await page.screenshot({path:"tmp/summary-heart-"+test.info().project.name+".png",fullPage:true});
+  state = "failed";
+  await expect(page.getByRole("heading",{name:"Summary preparation failed."})).toBeVisible({timeout:10000});
+  await expect(page.locator(".summary-heart-loader")).toHaveCount(0);
+  await expect(page.locator(".empty-report")).toHaveAttribute("aria-busy","false");
   await expect(page.getByText("The AI service rejected the request format. The integration needs a correction.",{exact:true})).toBeVisible();
   await expect(page.getByText("Preparing the document summary.",{exact:true})).toHaveCount(0);
   await expect(page.getByRole("button",{name:"Retry summary preparation"})).toBeEnabled();

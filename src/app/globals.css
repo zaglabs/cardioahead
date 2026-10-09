@@ -3364,3 +3364,20 @@ p {
     display: none;
   }
 }
+
+/* The double beat indicates a pending or running summary request. */
+.summary-heart-loader {
+  color: var(--forest, #23463b);
+  fill: #edf3e7;
+  transform-origin: center;
+  animation: summary-heartbeat 1.6s ease-in-out infinite;
+}
+@keyframes summary-heartbeat {
+  0%, 40%, 100% { transform: scale(1); }
+  12% { transform: scale(1.2); }
+  22% { transform: scale(1.03); }
+  30% { transform: scale(1.15); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .summary-heart-loader { animation: none; }
+}

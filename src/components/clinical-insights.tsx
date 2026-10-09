@@ -138,6 +138,14 @@ export function ClinicalInsights({
   }
   const summary = data?.analysis?.summary;
   const sources = data?.analysis?.sources || [];
+  const preparing = Boolean(
+    data?.configured &&
+    appointment.status !== "invited" &&
+    !summary &&
+    !error &&
+    (!data.analysis || data.analysis.status === "queued" || data.analysis.status === "generating"),
+  );
+  const queued = data?.analysis?.status !== "generating";
   return (
     <section className="clinical-insights">
       {error && (
@@ -152,15 +160,15 @@ export function ClinicalInsights({
         </div>
       )}
       {data && !summary && (
-        <div className="empty-report">
-          <Heart size={30} />
-          <h3>
+        <div className="empty-report" aria-busy={preparing}>
+          <Heart size={30} className={preparing ? "summary-heart-loader" : undefined} aria-hidden="true" />
+          <h3 aria-live="polite">
             {data.analysis?.status === "failed"
               ? t("הכנת הסיכום נכשלה.")
               : appointment.status === "invited"
                 ? t("ממתינים לשליחת המסמכים.")
                 : data.configured
-                  ? t("מכינים את הסיכום מהמסמכים.")
+                  ? queued ? t("הסיכום ממתין לתחילת העיבוד.") : t("מכינים את הסיכום מהמסמכים.")
                   : t("חיבור קורא המסמכים נדרש.")}
           </h3>
           <p>
@@ -169,7 +177,7 @@ export function ClinicalInsights({
               : appointment.status === "invited"
                 ? t("הסיכום יוכן לאחר שהמטופל ישלח את המסמכים למרפאה.")
                 : data.configured
-                  ? t(
+                  ? queued ? t("הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.") : t(
                       "הקבצים נקראים ונשמרת טיוטה עם הפניות למקורות. אין צורך להישאר בעמוד.",
                     )
                   : t("עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.")}

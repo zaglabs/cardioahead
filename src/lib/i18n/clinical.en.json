@@ -74,5 +74,7 @@
   "טיוטת ה-AI לא עמדה במבנה הנדרש. לא הוצג סיכום לא תקין.": "The AI draft did not match the required structure. An invalid summary was not displayed.",
   "טיוטת ה-AI כללה הפניה למקור שלא ניתן לאמת. יש לנסות שוב.": "The AI draft included a source reference that could not be validated. Please retry.",
   "הכנת הסיכום לא הושלמה. בדקו את החיבור ונסו שוב.": "The summary could not be completed. Check the connection and retry.",
-  "אפשר לנסות שוב לאחר תיקון החיבור.": "You can retry after the connection has been corrected."
+  "אפשר לנסות שוב לאחר תיקון החיבור.": "You can retry after the connection has been corrected.",
+  "הסיכום ממתין לתחילת העיבוד.": "Waiting to start summary preparation.",
+  "הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.": "The request has been received and will start shortly. This status updates automatically."
 }
