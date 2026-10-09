@@ -1,30 +1,40 @@
+"use client";
+import { useLanguage } from "@/components/language-provider";
 import Link from "next/link";
 import { ArrowUpLeft } from "lucide-react";
 import { Brand } from "./brand";
+import { LanguageSelector } from "./language-selector";
 export function SiteHeader() {
+  const { t } = useLanguage();
+
   return (
     <header className="site-header wrap">
       <Brand />
-      <nav aria-label="ניווט ראשי">
-        <Link href="/#how-it-works">איך זה עובד</Link>
-        <Link href="/#questions">שאלות נפוצות</Link>
-        <Link className="nav-clinic" href="/admin">
-          כניסה לצוות המרפאה
-          <ArrowUpLeft size={15} />
-        </Link>
-      </nav>
+      <div className="header-controls">
+        <nav aria-label={t("ניווט ראשי")}>
+          <Link href="/#how-it-works">{t("איך זה עובד")}</Link>
+          <Link href="/#questions">{t("שאלות נפוצות")}</Link>
+          <Link className="nav-clinic" href="/admin">
+            {t("כניסה לצוות המרפאה")}
+            <ArrowUpLeft size={15} />
+          </Link>
+        </nav>
+        <LanguageSelector />
+      </div>
     </header>
   );
 }
 export function Footer() {
+  const { t } = useLanguage();
+
   return (
     <footer className="site-footer wrap">
       <Brand />
-      <p>הכנה לביקור אצל פרופ׳ אלעד מאור</p>
+      <p>{t("הכנה לביקור אצל פרופ׳ אלעד מאור")}</p>
       <div>
-        <Link href="/privacy">פרטיות</Link>
+        <Link href="/privacy">{t("פרטיות")}</Link>
         <a href="https://eladmaor.co.il/" target="_blank" rel="noreferrer">
-          אתר פרופ׳ מאור
+          {t("אתר פרופ׳ מאור")}
         </a>
         <span dir="ltr">© {new Date().getFullYear()} CardioAhead</span>
       </div>

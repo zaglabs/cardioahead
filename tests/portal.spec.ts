@@ -80,7 +80,10 @@ async function verify(
 ) {
   return request.post("/api/patient/verify", {
     headers,
-    data: { token: invite.invitationUrl.split("/").pop(), code: invite.code },
+    data: {
+      token: new URL(invite.invitationUrl).pathname.split("/").pop(),
+      code: invite.code,
+    },
   });
 }
 test("Hebrew public site has no demo banner and stays readable", async ({
@@ -204,7 +207,7 @@ test("PIN failures persist, lock after five attempts, and expire/revoke access",
   staff: request,
 }) => {
   const invite = await invitation(request, "מטופל נעילה");
-  const token = invite.invitationUrl.split("/").pop();
+  const token = new URL(invite.invitationUrl).pathname.split("/").pop();
   const wrong = invite.code === "111111" ? "222222" : "111111";
   for (let i = 0; i < 5; i++)
     expect(

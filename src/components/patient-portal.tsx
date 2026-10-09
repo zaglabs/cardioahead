@@ -1,6 +1,8 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
 import { useRef, useState } from "react";
 import Link from "next/link";
+import { HeartIllustration } from "./heart-illustration";
 import {
   ArrowLeft,
   Check,
@@ -24,6 +26,8 @@ export function PatientPortal({
   token: string;
   ready: boolean;
 }) {
+  const { t, locale } = useLanguage();
+
   const [code, setCode] = useState("");
   const [appointment, setAppointment] = useState<AppointmentView | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
@@ -53,7 +57,7 @@ export function PatientPortal({
       setStep(data.appointment.status === "invited" ? 1 : 3);
       setCode("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "לא הצלחנו לאמת את הכניסה.");
+      setError(e instanceof Error ? e.message : t("לא הצלחנו לאמת את הכניסה."));
     } finally {
       setBusy(false);
     }
@@ -90,7 +94,7 @@ export function PatientPortal({
         );
         setQueue((current) => current.filter((q) => q.file !== files[i]));
       } catch (e) {
-        const message = e instanceof Error ? e.message : "ההעלאה לא הושלמה.";
+        const message = e instanceof Error ? e.message : t("ההעלאה לא הושלמה.");
         setQueue((current) =>
           current.map((q) =>
             q.file === files[i] ? { ...q, state: "failed", error: message } : q,
@@ -112,7 +116,7 @@ export function PatientPortal({
       });
       setStep(3);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "השליחה לא הושלמה.");
+      setError(e instanceof Error ? e.message : t("השליחה לא הושלמה."));
     } finally {
       setBusy(false);
     }
@@ -126,68 +130,96 @@ export function PatientPortal({
       setConfirmed(false);
       setStep(0);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "לא הצלחנו לצאת.");
+      setError(e instanceof Error ? e.message : t("לא הצלחנו לצאת."));
     } finally {
       setBusy(false);
     }
   }
   return (
     <div className="patient-layout">
-      <aside className="patient-sidebar">
-        <span className="eyebrow">מרחב המטופל</span>
+      <aside
+        className={
+          "patient-sidebar " + (step === 0 ? "invitation-sidebar" : "")
+        }
+      >
+        <span className="eyebrow">{t("מרחב המטופל")}</span>
         <h1>
-          מתכוננים לביקור,
+          {t("מתכוננים לביקור,")}
           <br />
-          בקצב שלכם.
+          {t("בקצב שלכם.")}
         </h1>
         <p>
-          מרכזים את המסמכים,
+          {t("מרכזים את המסמכים,")}
           <br />
-          כדי להגיע לפגישה
+          {t("כדי להגיע לפגישה")}
           <br />
-          עם תמונה ברורה יותר.
+          {t("עם תמונה ברורה יותר.")}
         </p>
+        {step === 0 && (
+          <div className="invitation-heart">
+            <HeartIllustration />
+            <span className="art-caption">
+              {t("איור סכמטי · אינו מייצג מטופל")}
+            </span>
+          </div>
+        )}
         <ol className="wizard-steps">
-          {["כניסה אישית", "המסמכים", "סיום ההכנה"].map((label, index) => (
-            <li
-              key={label}
-              className={
-                Math.min(step, 2) === index
-                  ? "current"
-                  : step > index
-                    ? "complete"
-                    : ""
-              }
-            >
-              <span>{step > index ? <Check size={15} /> : index + 1}</span>
-              <strong>{label}</strong>
-            </li>
-          ))}
+          {[t("כניסה אישית"), t("המסמכים"), t("סיום ההכנה")].map(
+            (label, index) => (
+              <li
+                key={label}
+                className={
+                  Math.min(step, 2) === index
+                    ? "current"
+                    : step > index
+                      ? "complete"
+                      : ""
+                }
+              >
+                <span>{step > index ? <Check size={15} /> : index + 1}</span>
+                <strong>{label}</strong>
+              </li>
+            ),
+          )}
         </ol>
         <div className="sidebar-note">
           <LockKeyhole size={20} />
-          <p>הקישור והקוד שקיבלתם מהמרפאה מיועדים לביקור שלכם בלבד.</p>
+          <p>{t("הקישור והקוד שקיבלתם מהמרפאה מיועדים לביקור שלכם בלבד.")}</p>
         </div>
       </aside>
       <section className="patient-panel">
         {step === 0 && (
           <>
-            <span className="eyebrow">צעד 1 מתוך 3</span>
-            <h2>נעים להכיר.</h2>
+            <span className="eyebrow">{t("צעד 1 מתוך 3")}</span>
+            <h2>{t("ברוכים הבאים למרפאת פרופ׳ אלעד מאור")}</h2>
+            <div className="invitation-intro">
+              <p>
+                {t(
+                  "זהו הקישור האישי שקיבלתם מהמרפאה. כאן תוכלו לרכז ולשלוח את המסמכים לקראת הביקור, כדי שלצוות תהיה תמונה מסודרת לפני הפגישה.",
+                )}
+              </p>
+              <div className="invitation-privacy">
+                <LockKeyhole size={18} />
+                <span>
+                  {t("המסמכים נשמרים בגישה פרטית לצוות המרפאה המורשה.")}
+                </span>
+              </div>
+            </div>
             <p className="panel-description">
-              הזינו את קוד הגישה בן שש הספרות שקיבלתם מצוות המרפאה.
+              {t("הזינו את קוד הגישה בן שש הספרות שקיבלתם מצוות המרפאה.")}
             </p>
             {!ready ? (
               <div className="info-box">
                 <p>
-                  הגישה תיפתח לאחר חיבור האחסון הפרטי. אין אפשרות להעלות מסמכים
-                  בשלב זה.
+                  {t(
+                    "הגישה תיפתח לאחר חיבור האחסון הפרטי. אין אפשרות להעלות מסמכים בשלב זה.",
+                  )}
                 </p>
               </div>
             ) : (
               <form onSubmit={verify} className="portal-form">
                 <label>
-                  קוד גישה
+                  {t("קוד גישה")}
                   <input
                     autoComplete="one-time-code"
                     inputMode="numeric"
@@ -203,20 +235,88 @@ export function PatientPortal({
                   />
                 </label>
                 <button className="button button-dark" disabled={busy}>
-                  {busy ? "מאמתים את הכניסה…" : "כניסה למרחב האישי"}
+                  {busy ? t("מאמתים את הכניסה…") : t("כניסה למרחב האישי")}
                   <ArrowLeft size={17} />
                 </button>
               </form>
             )}
           </>
         )}
+        {step === 0 && (
+          <div className="invitation-guidance">
+            <h3>{t("שלושה צעדים פשוטים")}</h3>
+            <ol>
+              <li>
+                <span>1</span>
+                <div>
+                  <strong>{t("מזינים את הקוד שקיבלתם")}</strong>
+                  <p>{t("אין צורך לפתוח חשבון או לבחור סיסמה.")}</p>
+                </div>
+              </li>
+              <li>
+                <span>2</span>
+                <div>
+                  <strong>{t("מצרפים את המסמכים")}</strong>
+                  <p>{t("אפשר לבחור כמה קובצי PDF מהמחשב או מהטלפון.")}</p>
+                </div>
+              </li>
+              <li>
+                <span>3</span>
+                <div>
+                  <strong>{t("בודקים ושולחים למרפאה")}</strong>
+                  <p>
+                    {t("לאחר האישור, המסמכים יהיו זמינים לצוות לקראת הפגישה.")}
+                  </p>
+                </div>
+              </li>
+            </ol>
+            <details className="invitation-help">
+              <summary>{t("מה כדאי להכין?")}</summary>
+              <p>
+                {t(
+                  "סיכומי ביקור או אשפוז, הפניה, תוצאות בדיקות לב ורשימת התרופות שלכם — לפי ההנחיות שקיבלתם מהמרפאה.",
+                )}
+              </p>
+              <p>
+                {t(
+                  "בשלב הבדיקות מעלים רק את מסמכי הבדיקה הפיקטיביים של CardioAhead.",
+                )}
+              </p>
+              <Link
+                href="/test-documents"
+                target="_blank"
+                className="text-link"
+              >
+                {t("להורדת מסמכי הבדיקה")}
+              </Link>
+            </details>
+            <details className="invitation-help">
+              <summary>{t("צריכים עזרה?")}</summary>
+              <p>
+                {t(
+                  "בן או בת משפחה יכולים לעזור לכם להכין ולהעלות את הקבצים. אם חסר לכם קוד, או שהקישור אינו עובד, פנו לצוות המרפאה.",
+                )}
+              </p>
+              <a
+                href="https://eladmaor.co.il/"
+                target="_blank"
+                rel="noreferrer"
+                className="text-link"
+              >
+                {t("פרטי הקשר של המרפאה")}
+              </a>
+            </details>
+            <p className="form-note">{t("ההעלאה אינה פנייה רפואית דחופה.")}</p>
+          </div>
+        )}
         {appointment && step === 1 && (
           <>
-            <span className="eyebrow">צעד 2 מתוך 3</span>
-            <h2>המסמכים לקראת הביקור.</h2>
+            <span className="eyebrow">{t("צעד 2 מתוך 3")}</span>
+            <h2>{t("המסמכים לקראת הביקור.")}</h2>
             <p className="panel-description">
-              בחרו את קובצי ה-PDF שתרצו לצרף. כל מסמך יישמר לפני שתמשיכו לשליחה
-              למרפאה.
+              {t(
+                "בחרו את קובצי ה-PDF שתרצו לצרף. כל מסמך יישמר לפני שתמשיכו לשליחה למרפאה.",
+              )}
             </p>
             <div className="appointment-card">
               <span className="appointment-icon">
@@ -224,21 +324,22 @@ export function PatientPortal({
               </span>
               <div>
                 <span>{appointment.patient_label}</span>
-                <h3>פגישה עם פרופ׳ אלעד מאור</h3>
+                <h3>{t("פגישה עם פרופ׳ אלעד מאור")}</h3>
                 <p>
                   {appointment.appointment_at
                     ? new Date(appointment.appointment_at).toLocaleString(
-                        "he-IL",
+                        locale,
                         { dateStyle: "long", timeStyle: "short" },
                       )
-                    : "מועד הביקור יימסר על ידי צוות המרפאה"}
+                    : t("מועד הביקור יימסר על ידי צוות המרפאה")}
                 </p>
               </div>
             </div>
             <div className="info-box">
               <p>
-                בשלב הבדיקות השתמשו רק במסמכי הבדיקה הפיקטיביים. המסמכים
-                האמיתיים ייפתחו בהמשך.
+                {t(
+                  "בשלב הבדיקות השתמשו רק במסמכי הבדיקה הפיקטיביים. המסמכים האמיתיים ייפתחו בהמשך.",
+                )}
               </p>
             </div>
             <div
@@ -250,15 +351,15 @@ export function PatientPortal({
               }}
             >
               <FolderOpen size={30} />
-              <strong>בחירת מסמכים מהמכשיר</strong>
-              <span>PDF בלבד · עד 4 MB לקובץ · עד 10 מסמכים</span>
+              <strong>{t("בחירת מסמכים מהמכשיר")}</strong>
+              <span>{t("PDF בלבד · עד 4 MB לקובץ · עד 10 מסמכים")}</span>
               <button
                 type="button"
                 className="button button-dark"
                 onClick={() => fileInput.current?.click()}
                 disabled={busy}
               >
-                {busy ? "מעלים מסמכים…" : "בחרו קבצים"}
+                {busy ? t("מעלים מסמכים…") : t("בחרו קבצים")}
                 <FileText size={17} />
               </button>
               <input
@@ -267,7 +368,7 @@ export function PatientPortal({
                 type="file"
                 accept=".pdf,application/pdf"
                 multiple
-                aria-label="בחירת קובצי PDF"
+                aria-label={t("בחירת קובצי PDF")}
                 disabled={busy}
                 onChange={(e) => {
                   if (e.target.files) void upload(Array.from(e.target.files));
@@ -282,7 +383,10 @@ export function PatientPortal({
                   </span>
                   <span>
                     <strong dir="auto">{d.filename}</strong>
-                    <small>{Math.ceil(d.bytes / 1024)} KB · נשמר</small>
+                    <small>
+                      {Math.ceil(d.bytes / 1024)}
+                      {t(" KB · נשמר")}
+                    </small>
                   </span>
                   <CheckCircle2 size={20} />
                 </div>
@@ -294,8 +398,8 @@ export function PatientPortal({
                     {q.state === "failed"
                       ? q.error
                       : q.state === "uploading"
-                        ? "מעלה…"
-                        : "ממתין להעלאה"}
+                        ? t("מעלה…")
+                        : t("ממתין להעלאה")}
                   </span>
                   {q.state === "failed" && (
                     <button
@@ -307,7 +411,7 @@ export function PatientPortal({
                         )
                       }
                     >
-                      הסרה מהרשימה
+                      {t("הסרה מהרשימה")}
                     </button>
                   )}
                 </div>
@@ -321,19 +425,22 @@ export function PatientPortal({
                 }
                 onClick={() => setStep(2)}
               >
-                בדיקה לפני שליחה
+                {t("בדיקה לפני שליחה")}
                 <ArrowLeft size={17} />
               </button>
-              <span>{appointment.documents.length} מסמכים נשמרו</span>
+              <span>
+                {appointment.documents.length}
+                {t(" מסמכים נשמרו")}
+              </span>
             </div>
           </>
         )}
         {appointment && step === 2 && (
           <>
-            <span className="eyebrow">צעד 3 מתוך 3</span>
-            <h2>הכול מוכן לשליחה?</h2>
+            <span className="eyebrow">{t("צעד 3 מתוך 3")}</span>
+            <h2>{t("הכול מוכן לשליחה?")}</h2>
             <p className="panel-description">
-              המסמכים הבאים יופיעו בתיק הביקור לצוות המרפאה.
+              {t("המסמכים הבאים יופיעו בתיק הביקור לצוות המרפאה.")}
             </p>
             <div className="review-list">
               {appointment.documents.map((d) => (
@@ -351,10 +458,11 @@ export function PatientPortal({
                 onChange={(e) => setConfirmed(e.target.checked)}
               />
               <span>
-                בדקתי שהמסמכים שייכים לתיק הבדיקה, ואני מאשר/ת לצוות המרפאה
-                לצפות בהם.{" "}
+                {t(
+                  "בדקתי שהמסמכים שייכים לתיק הבדיקה, ואני מאשר/ת לצוות המרפאה לצפות בהם.",
+                )}{" "}
                 <Link href="/privacy" target="_blank">
-                  פרטי השימוש במידע
+                  {t("פרטי השימוש במידע")}
                 </Link>
               </span>
             </label>
@@ -364,7 +472,7 @@ export function PatientPortal({
                 disabled={busy || !confirmed}
                 onClick={finish}
               >
-                {busy ? "שולחים למרפאה…" : "שליחה למרפאה"}
+                {busy ? t("שולחים למרפאה…") : t("שליחה למרפאה")}
                 <Check size={17} />
               </button>
               <button
@@ -372,7 +480,7 @@ export function PatientPortal({
                 disabled={busy}
                 onClick={() => setStep(1)}
               >
-                חזרה למסמכים
+                {t("חזרה למסמכים")}
               </button>
             </div>
           </>
@@ -382,23 +490,25 @@ export function PatientPortal({
             <span className="completion-icon">
               <Check size={32} />
             </span>
-            <span className="eyebrow">ההכנה הושלמה</span>
-            <h2>המסמכים התקבלו.</h2>
-            <p>המסמכים שצירפתם זמינים כעת לצוות המרפאה לקראת הפגישה.</p>
+            <span className="eyebrow">{t("ההכנה הושלמה")}</span>
+            <h2>{t("המסמכים התקבלו.")}</h2>
+            <p>{t("המסמכים שצירפתם זמינים כעת לצוות המרפאה לקראת הפגישה.")}</p>
             <div className="info-box">
               <p>
-                אין צורך לשלוח שוב. היציאה מהעמוד לא תמחק את המסמכים שנשמרו.
+                {t(
+                  "אין צורך לשלוח שוב. היציאה מהעמוד לא תמחק את המסמכים שנשמרו.",
+                )}
               </p>
             </div>
             <Link href="/" className="button button-dark">
-              חזרה לאתר
+              {t("חזרה לאתר")}
               <ArrowLeft size={17} />
             </Link>
           </div>
         )}
         {error && (
           <p className="form-error" role="alert">
-            {error}
+            {t(error)}
           </p>
         )}
         {appointment && (
@@ -407,7 +517,8 @@ export function PatientPortal({
             disabled={busy}
             onClick={logout}
           >
-            <LogOut size={16} /> יציאה מהמרחב האישי
+            <LogOut size={16} />
+            {t("יציאה מהמרחב האישי")}
           </button>
         )}
       </section>

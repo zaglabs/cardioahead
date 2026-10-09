@@ -1,3 +1,4 @@
+import { getTranslations } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import { authConfigured, configured } from "@/lib/portal/config";
 import { requireIdentity, appointmentView } from "@/lib/portal/security";
@@ -6,7 +7,10 @@ import { PortalFrame } from "@/components/portal-frame";
 import { ClinicLogin } from "@/components/clinic-login";
 import { ClinicPortal } from "@/components/clinic-portal";
 import { StaffPending } from "@/components/staff-pending";
-export const metadata: Metadata = { title: "סביבת המרפאה" };
+export async function generateMetadata(): Promise<Metadata> {
+  const { t } = await getTranslations();
+  return { title: t("סביבת המרפאה") };
+}
 export const dynamic = "force-dynamic";
 export default async function AdminPage() {
   let identity = null;

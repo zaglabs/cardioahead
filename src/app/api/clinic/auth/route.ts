@@ -1,3 +1,5 @@
+import { getLanguage } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/catalog";
 import { cookies } from "next/headers";
 import {
   randomToken,
@@ -23,6 +25,7 @@ export async function POST(request: Request) {
     sameOrigin(request);
     ensureConfigured();
     const input = await body(request);
+    const language = await getLanguage();
     const jar = await cookies();
     if (input.action === "logout") {
       await clearSession("staff");
@@ -68,7 +71,7 @@ export async function POST(request: Request) {
           "בקשות רבות מדי. המתינו דקה ונסו שוב; אם הבעיה נמשכת, נסו מאוחר יותר.",
         );
       try {
-        await sendLoginCode(email, code, id);
+        await sendLoginCode(email, code, id, language);
         await store.delivery(id, true);
       } catch (error) {
         await store.delivery(id, false);
@@ -84,7 +87,7 @@ export async function POST(request: Request) {
       return json({
         ok: true,
         retryAfter: 60,
-        message: "קוד כניסה נשלח לכתובת שהזנתם.",
+        message: translate("קוד כניסה נשלח לכתובת שהזנתם.", language),
       });
     }
     if (input.action !== "verify")

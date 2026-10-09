@@ -1,8 +1,11 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LockKeyhole, ArrowLeft } from "lucide-react";
 export function ClinicLogin({ ready }: { ready: boolean }) {
+  const { t } = useLanguage();
+
   const [email, setEmail] = useState("");
   const [code, setCode] = useState("");
   const [sent, setSent] = useState(false);
@@ -33,7 +36,9 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
         setCountdown(data.retryAfter || 60);
       }
     } catch (e) {
-      setError(e instanceof Error ? e.message : "לא הצלחנו להתחבר. נסו שוב.");
+      setError(
+        e instanceof Error ? e.message : t("לא הצלחנו להתחבר. נסו שוב."),
+      );
     } finally {
       setBusy(false);
     }
@@ -43,16 +48,20 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
       <span className="completion-icon">
         <LockKeyhole size={28} />
       </span>
-      <span className="eyebrow">גישה לצוות המרפאה</span>
-      <h1>{sent ? "בדקו את הדוא״ל שלכם." : "ברוכים הבאים."}</h1>
+      <span className="eyebrow">{t("גישה לצוות המרפאה")}</span>
+      <h1>{sent ? t("בדקו את הדוא״ל שלכם.") : t("ברוכים הבאים.")}</h1>
       <p className="panel-description">
         {sent
-          ? "שלחנו קוד אישי בן 6 ספרות לכתובת שהזנתם. הקוד תקף ל־10 דקות."
-          : "היכנסו עם כתובת הדוא״ל האישית שלכם. גישה חדשה לצוות המרפאה דורשת אישור מנהל המערכת."}
+          ? t("שלחנו קוד אישי בן 6 ספרות לכתובת שהזנתם. הקוד תקף ל־10 דקות.")
+          : t(
+              "היכנסו עם כתובת הדוא״ל האישית שלכם. גישה חדשה לצוות המרפאה דורשת אישור מנהל המערכת.",
+            )}
       </p>
       {!ready && (
         <div className="info-box">
-          <p>שירות הכניסה ייפתח לאחר השלמת חיבור הדוא״ל והאחסון הפרטי.</p>
+          <p>
+            {t("שירות הכניסה ייפתח לאחר השלמת חיבור הדוא״ל והאחסון הפרטי.")}
+          </p>
         </div>
       )}
       <form
@@ -63,7 +72,7 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
         }}
       >
         <label>
-          כתובת דוא״ל
+          {t("כתובת דוא״ל")}
           <input
             type="email"
             dir="ltr"
@@ -76,7 +85,7 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
         </label>
         {sent && (
           <label>
-            קוד כניסה בן 6 ספרות
+            {t("קוד כניסה בן 6 ספרות")}
             <input
               className="otp-input"
               type="text"
@@ -98,14 +107,18 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
         )}
         {error && (
           <p className="form-error" role="alert">
-            {error}
+            {t(error)}
           </p>
         )}
         <button
           className="button button-dark"
           disabled={busy || !ready || (sent && code.length !== 6)}
         >
-          {busy ? "רגע, מתחברים…" : sent ? "אימות וכניסה" : "שלחו לי קוד כניסה"}
+          {busy
+            ? t("רגע, מתחברים…")
+            : sent
+              ? t("אימות וכניסה")
+              : t("שלחו לי קוד כניסה")}
           <ArrowLeft size={17} />
         </button>
         {sent && (
@@ -117,8 +130,8 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
               onClick={() => void authenticate("request")}
             >
               {countdown > 0
-                ? "אפשר לשלוח שוב בעוד " + countdown + " שניות"
-                : "שליחת קוד חדש"}
+                ? t("אפשר לשלוח שוב בעוד ") + countdown + t(" שניות")
+                : t("שליחת קוד חדש")}
             </button>
             <button
               className="text-button"
@@ -130,12 +143,12 @@ export function ClinicLogin({ ready }: { ready: boolean }) {
                 setError("");
               }}
             >
-              שינוי כתובת דוא״ל
+              {t("שינוי כתובת דוא״ל")}
             </button>
           </div>
         )}
         <p className="form-note">
-          אין צורך בסיסמה. אל תשתפו את קוד הכניסה עם אחרים.
+          {t("אין צורך בסיסמה. אל תשתפו את קוד הכניסה עם אחרים.")}
         </p>
       </form>
     </section>

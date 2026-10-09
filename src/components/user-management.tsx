@@ -1,4 +1,5 @@
 "use client";
+import { useLanguage } from "@/components/language-provider";
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, ShieldCheck, Users, RefreshCw } from "lucide-react";
@@ -11,6 +12,8 @@ const statuses: Record<StaffStatus, string> = {
   rejected: "בקשה נדחתה",
 };
 export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
+  const { t, locale } = useLanguage();
+
   const [users, setUsers] = useState(initialUsers);
   const [busy, setBusy] = useState("");
   const [error, setError] = useState("");
@@ -57,8 +60,8 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
       setConfirmation(null);
       setMessage(
         status === "active"
-          ? "הגישה למרפאה אושרה."
-          : "הגישה בוטלה והכניסות הפעילות נסגרו.",
+          ? t("הגישה למרפאה אושרה.")
+          : t("הגישה בוטלה והכניסות הפעילות נסגרו."),
       );
     } catch (e) {
       setError((e as Error).message);
@@ -71,19 +74,19 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
     <section className="user-management">
       <Link href="/admin" className="back-link">
         <ArrowRight size={18} />
-        חזרה לסביבת המרפאה
+        {t("חזרה לסביבת המרפאה")}
       </Link>
       <div className="management-heading">
         <div>
-          <span className="eyebrow">מנהל המערכת</span>
-          <h1>צוות המרפאה</h1>
+          <span className="eyebrow">{t("מנהל המערכת")}</span>
+          <h1>{t("צוות המרפאה")}</h1>
           <p className="panel-description">
-            אשרו בקשות גישה ובחרו הרשאה לכל חבר צוות.
+            {t("אשרו בקשות גישה ובחרו הרשאה לכל חבר צוות.")}
           </p>
         </div>
         <button
           className="icon-button"
-          aria-label="רענון המשתמשים"
+          aria-label={t("רענון המשתמשים")}
           onClick={() => void refresh()}
           disabled={!!busy}
         >
@@ -94,23 +97,27 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
         <ShieldCheck size={22} />
         <div>
           <strong>
-            מנהל יחיד: <bdi>{OWNER_EMAIL}</bdi>
+            {t("מנהל יחיד:")} <bdi>{OWNER_EMAIL}</bdi>
           </strong>
-          <p>חשבון זה מוגן משינוי ומהסרה. רק אתם יכולים לאשר צוות חדש.</p>
+          <p>
+            {t("חשבון זה מוגן משינוי ומהסרה. רק אתם יכולים לאשר צוות חדש.")}
+          </p>
         </div>
       </div>
       <p className="pending-count">
         <Users size={20} />
-        {pending ? pending + " בקשות ממתינות לאישור" : "אין בקשות חדשות כרגע"}
+        {pending
+          ? pending + t(" בקשות ממתינות לאישור")
+          : t("אין בקשות חדשות כרגע")}
       </p>
       {error && (
         <p className="form-error" role="alert">
-          {error}
+          {t(error)}
         </p>
       )}
       {message && (
         <p className="info-box" role="status">
-          {message}
+          {t(message)}
         </p>
       )}
       <div className="staff-list">
@@ -119,26 +126,26 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
             <div className="staff-card-identity">
               <strong dir="ltr">{user.email}</strong>
               <span className={"staff-status status-" + user.status}>
-                {statuses[user.status]}
+                {t(statuses[user.status])}
               </span>
               <small>
                 {user.email === OWNER_EMAIL
-                  ? "מנהל המערכת"
-                  : "בקשת גישה: " +
-                    new Date(user.created_at).toLocaleDateString("he-IL")}
+                  ? t("מנהל המערכת")
+                  : t("בקשת גישה: ") +
+                    new Date(user.created_at).toLocaleDateString(locale)}
               </small>
             </div>
             {user.email === OWNER_EMAIL ? (
               <span className="owner-lock">
                 <ShieldCheck size={18} />
-                חשבון מוגן
+                {t("חשבון מוגן")}
               </span>
             ) : (
               <div className="staff-card-controls">
                 <label>
-                  הרשאה
+                  {t("הרשאה")}
                   <select
-                    aria-label={"הרשאה עבור " + user.email}
+                    aria-label={t("הרשאה עבור ") + user.email}
                     value={user.role}
                     disabled={!!busy}
                     onChange={(e) =>
@@ -155,8 +162,8 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
                       )
                     }
                   >
-                    <option value="secretary">מזכירות</option>
-                    <option value="professor">רופא / פרופסור</option>
+                    <option value="secretary">{t("מזכירות")}</option>
+                    <option value="professor">{t("רופא / פרופסור")}</option>
                   </select>
                 </label>
                 <div className="staff-actions">
@@ -166,12 +173,12 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
                     onClick={() => void update(user, "active")}
                   >
                     {busy === user.id
-                      ? "שומרים…"
+                      ? t("שומרים…")
                       : user.status === "active"
-                        ? "שמירת הרשאה"
+                        ? t("שמירת הרשאה")
                         : user.status === "pending"
-                          ? "אישור גישה"
-                          : "החזרת גישה"}
+                          ? t("אישור גישה")
+                          : t("החזרת גישה")}
                   </button>
                   {user.status === "pending" && (
                     <button
@@ -181,7 +188,7 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
                         setConfirmation({ user, status: "rejected" })
                       }
                     >
-                      דחיית הבקשה
+                      {t("דחיית הבקשה")}
                     </button>
                   )}
                   {user.status === "active" && (
@@ -192,7 +199,7 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
                         setConfirmation({ user, status: "suspended" })
                       }
                     >
-                      השהיית גישה
+                      {t("השהיית גישה")}
                     </button>
                   )}
                 </div>
@@ -212,15 +219,16 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
             <div className="patient-panel">
               <h2 id="confirm-title">
                 {confirmation.status === "suspended"
-                  ? "להשהות את הגישה?"
-                  : "לדחות את הבקשה?"}
+                  ? t("להשהות את הגישה?")
+                  : t("לדחות את הבקשה?")}
               </h2>
               <p>
                 <bdi>{confirmation.user.email}</bdi>
               </p>
               <p>
-                החשבון לא יוכל לגשת למסמכי המרפאה. כל הכניסות הפעילות שלו
-                ייסגרו.
+                {t(
+                  "החשבון לא יוכל לגשת למסמכי המרפאה. כל הכניסות הפעילות שלו ייסגרו.",
+                )}
               </p>
               <div className="staff-actions">
                 <button
@@ -230,19 +238,19 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
                     void update(confirmation.user, confirmation.status)
                   }
                 >
-                  אישור ביטול הגישה
+                  {t("אישור ביטול הגישה")}
                 </button>
                 <button
                   className="text-button"
                   disabled={!!busy}
                   onClick={() => setConfirmation(null)}
                 >
-                  חזרה
+                  {t("חזרה")}
                 </button>
               </div>
               {error && (
                 <p className="form-error" role="alert">
-                  {error}
+                  {t(error)}
                 </p>
               )}
             </div>
@@ -250,9 +258,9 @@ export function UserManagement({ initialUsers }: { initialUsers: Staff[] }) {
         )}
       </dialog>
       <p className="form-note">
-        כדי להצטרף לצוות, יש להיכנס בעמוד המרפאה ולאמת כתובת דוא״ל. הבקשה תופיע
-        כאן לאחר האימות. מזכירות ורופא יכולים לנהל ביקורים ומסמכים; ניהול
-        משתמשים זמין רק לכם.
+        {t(
+          "כדי להצטרף לצוות, יש להיכנס בעמוד המרפאה ולאמת כתובת דוא״ל. הבקשה תופיע כאן לאחר האימות. מזכירות ורופא יכולים לנהל ביקורים ומסמכים; ניהול משתמשים זמין רק לכם.",
+        )}
       </p>
     </section>
   );

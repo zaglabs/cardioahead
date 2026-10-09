@@ -1,24 +1,23 @@
-# Hebrew clinic portal - implementation status
+# Bilingual clinic portal - implementation status
+
+Hosted pilot:
+- Supabase is connected through Vercel Marketplace and both migrations have been applied.
+- Resend delivery, the sender address and session secret are configured in Production.
+- Live OTP requests were accepted and the owner confirmed the clinic flow works.
+- Only the three reviewed fictional PDFs are accepted; real-patient uploads remain blocked.
 
 Implemented:
-- Hebrew invitations, separate patient PINs, uploads and private clinic PDF access.
-- Sole protected administrator: galadv73@gmail.com.
-- Six-digit email OTP through the raw Resend API, without SDK, webhooks or Supabase Auth.
-- Durable hashed OTPs, ten-minute expiry, single use, five-attempt lockout and atomic rate limits.
-- Browser-bound challenges and two-hour opaque authenticated sessions.
-- Email-verified staff requests, owner approval, secretary/doctor roles and session-revoking suspension.
-- Small owner-only management button and responsive Hebrew staff management.
-- Private Supabase bucket and tables, denied browser access and database authorization.
-- PostgreSQL tests and desktop/mobile two-browser flow tests.
-- Three visibly fictional Hebrew PDFs and a server-enforced hash whitelist.
-
-Pending to enable hosted login:
-- Supabase project connection and both SQL migrations.
-- Verified Resend sending domain and sending API key.
-- Server-only Vercel environment variables and redeployment.
+- Hebrew and English landing, patient, clinic, admin, privacy and help screens.
+- Top-bar language selector, remembered preference, shareable lang=en/he URLs and matching page direction.
+- Localised OTP emails, API errors, dates, status labels and accessibility text.
+- Invitation introduction with the landing page heart illustration, preparation instructions and clinic help.
+- Independent patient-language selection when clinic staff create an invitation.
+- Language switching preserves the login step, draft invitation and uploaded files.
+- Sole protected administrator galadv73@gmail.com, approved staff roles and session-revoking suspension.
+- Private storage, scoped patient invitations, access-code lockout, audits and document review.
+- Database checks and 28 desktop/mobile browser tests.
 
 Next:
-- Prof. Maor's anonymized report sample, document extraction and durable AI processing.
+- Prof. Maor’s anonymised report sample, source-aware extraction and durable AI processing.
 - Authenticated report notifications without medical email attachments.
-
-Real-patient use remains blocked by the synthetic PDF whitelist.
+- Real-data launch controls and the clinic’s provider, retention and privacy decisions.

@@ -1,10 +1,14 @@
+"use client";
+import { useLanguage } from "@/components/language-provider";
 import Link from "next/link";
 export function Brand({ light = false }: { light?: boolean }) {
+  const { t } = useLanguage();
+
   return (
     <Link
       href="/"
       className={`brand ${light ? "brand-light" : ""}`}
-      aria-label="CardioAhead — עמוד הבית"
+      aria-label={t("CardioAhead — עמוד הבית")}
     >
       <svg viewBox="0 0 40 40" fill="none" aria-hidden="true">
         <rect x="1" y="1" width="38" height="38" rx="13" fill="currentColor" />

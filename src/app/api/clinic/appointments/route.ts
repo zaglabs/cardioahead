@@ -36,6 +36,9 @@ export async function POST(request: Request) {
     const staff = await requireStaff();
     const input = await body(request);
     const label = text(input.patientLabel, 100);
+    const language = input.language ?? "he";
+    if (language !== "he" && language !== "en")
+      throw new PortalError(400, "BAD_LANGUAGE", "שפה לא תקינה.");
     const suppliedDate = input.appointmentAt;
     const date =
       typeof suppliedDate === "string" && suppliedDate
@@ -71,7 +74,9 @@ export async function POST(request: Request) {
         invitationUrl:
           (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin) +
           "/invite/" +
-          token,
+          token +
+          "?lang=" +
+          language,
         code,
       },
       201,

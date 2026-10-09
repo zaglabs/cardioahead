@@ -1,6 +1,6 @@
 # CardioAhead
 
-Hebrew pre-appointment preparation for Prof. Elad Maor, hosted on Vercel.
+Hebrew and English pre-appointment preparation for Prof. Elad Maor, hosted on Vercel.
 
 ## Current release
 
@@ -22,6 +22,16 @@ controls remain the next stage. No report is fabricated from filenames or fixtur
 
 **galadv73@gmail.com** is the sole protected administrator. Verified staff wait for owner approval.
 Only the owner sees user management. Suspension revokes active sessions.
+
+## Languages and invitations
+
+Choose Hebrew or English in the top bar. The preference is remembered in a public language cookie;
+English pages can also be opened directly with `?lang=en`, including `/admin?lang=en`.
+Hebrew remains the default. The document content and patient-entered names are kept as supplied.
+Clinic staff choose the patient invitation language independently of their own workspace language.
+Invitation pages include a clinic introduction, preparation steps, help and the existing heart graphic.
+OTP emails and API errors follow the chosen interface language. Switching languages keeps active
+forms, sign-in verification and uploaded documents intact.
 
 ## Routes
 

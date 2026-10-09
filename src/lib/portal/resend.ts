@@ -1,6 +1,7 @@
 import "server-only";
 import { localTestMode } from "./config";
 import { PortalError } from "./security";
+import type { Language } from "@/lib/i18n/catalog";
 // A loopback endpoint is allowed only for automated local integration tests.
 function endpoint() {
   if (localTestMode() && process.env.CARDIOAHEAD_TEST_RESEND_URL) {
@@ -15,7 +16,18 @@ export async function sendLoginCode(
   email: string,
   code: string,
   challengeId: string,
+  language: Language,
 ) {
+  const en = language === "en";
+  const title = en ? "Sign in to CardioAhead" : "כניסה ל־CardioAhead";
+  const label = en ? "Your sign-in code:" : "קוד הכניסה שלכם:";
+  const expiry = en
+    ? "This code is valid for 10 minutes and one use only. Do not share it with anyone."
+    : "הקוד תקף ל־10 דקות ולשימוש אחד. אל תשתפו אותו עם אחרים.";
+  const unsolicited = en
+    ? "If you did not request this code, you can ignore this email."
+    : "אם לא ביקשתם להיכנס, אפשר להתעלם מההודעה.";
+  const clinic = en ? "Prof. Elad Maor’s clinic" : "מרפאת פרופ׳ אלעד מאור";
   try {
     const response = await fetch(endpoint(), {
       method: "POST",
@@ -27,15 +39,37 @@ export async function sendLoginCode(
       body: JSON.stringify({
         from: process.env.RESEND_FROM_EMAIL,
         to: [email],
-        subject: "קוד הכניסה שלכם ל־CardioAhead",
+        subject: en
+          ? "Your CardioAhead sign-in code"
+          : "קוד הכניסה שלכם ל־CardioAhead",
         text:
-          "קוד הכניסה שלכם הוא: " +
+          label +
+          " " +
           code +
-          "\n\nהקוד תקף ל־10 דקות וניתן לשימוש פעם אחת בלבד. אל תשתפו את הקוד עם אחרים. אם לא ביקשתם להיכנס, אפשר להתעלם מההודעה.\n\nCardioAhead | מרפאת פרופ׳ אלעד מאור",
+          "\n\n" +
+          expiry +
+          "\n" +
+          unsolicited +
+          "\n\nCardioAhead | " +
+          clinic,
         html:
-          '<div dir="rtl" lang="he" style="font-family:Arial,sans-serif;font-size:18px;line-height:1.7;color:#183b3b"><h2>כניסה ל־CardioAhead</h2><p>קוד הכניסה שלכם:</p><p dir="ltr" style="font-size:34px;letter-spacing:8px;font-weight:bold">' +
+          '<div dir="' +
+          (en ? "ltr" : "rtl") +
+          '" lang="' +
+          language +
+          '" style="font-family:Arial,sans-serif;font-size:18px;line-height:1.7;color:#183b3b"><h2>' +
+          title +
+          "</h2><p>" +
+          label +
+          '</p><p dir="ltr" style="font-size:34px;letter-spacing:8px;font-weight:bold">' +
           code +
-          "</p><p>הקוד תקף ל־10 דקות ולשימוש אחד. אל תשתפו אותו עם אחרים.</p><p>אם לא ביקשתם להיכנס, אפשר להתעלם מההודעה.</p><p>מרפאת פרופ׳ אלעד מאור</p></div>",
+          "</p><p>" +
+          expiry +
+          "</p><p>" +
+          unsolicited +
+          "</p><p>" +
+          clinic +
+          "</p></div>",
       }),
       signal: AbortSignal.timeout(10000),
       cache: "no-store",

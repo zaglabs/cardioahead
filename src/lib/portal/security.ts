@@ -11,6 +11,8 @@ import { NextResponse } from "next/server";
 import { configured, localTestMode, secret } from "./config";
 import { getStore } from "./store";
 import { isAdmin } from "./staff-access";
+import { getLanguage } from "@/lib/i18n/server";
+import { translate } from "@/lib/i18n/catalog";
 import type {
   AppointmentView,
   DocumentView,
@@ -83,21 +85,33 @@ export function json(data: unknown, status = 200) {
     headers: { "Cache-Control": "private, no-store" },
   });
 }
-export function failure(error: unknown) {
-  if (error instanceof PortalError)
-    return json({ error: error.code, message: error.message }, error.status);
-  console.error(
-    "Portal operation failed",
-    error instanceof Error ? error.name : "UnknownError",
-  );
-  return json(
-    {
-      error: "SERVICE_ERROR",
-      message: "לא הצלחנו להשלים את הפעולה. נסו שוב בעוד רגע.",
-    },
-    500,
-  );
+export async function failure(error: unknown) {
+  const language = await getLanguage();
+  const response =
+    error instanceof PortalError
+      ? json(
+          { error: error.code, message: translate(error.message, language) },
+          error.status,
+        )
+      : json(
+          {
+            error: "SERVICE_ERROR",
+            message: translate(
+              "לא הצלחנו להשלים את הפעולה. נסו שוב בעוד רגע.",
+              language,
+            ),
+          },
+          500,
+        );
+  if (!(error instanceof PortalError))
+    console.error(
+      "Portal operation failed",
+      error instanceof Error ? error.name : "UnknownError",
+    );
+  response.headers.set("Content-Language", language);
+  return response;
 }
+
 const cookieName = (kind: "staff" | "patient") =>
   kind === "staff" ? "cardioahead_clinic" : "cardioahead_patient";
 export async function setSession(
