@@ -5,10 +5,14 @@ export const BUCKET = "cardioahead-private";
 export function localTestMode() {
   return !process.env.VERCEL && process.env.CARDIOAHEAD_LOCAL_TEST === "true";
 }
+export function supabaseServerKey() {
+  return (
+    process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
+  );
+}
 export function configured() {
   return Boolean(
-    (localTestMode() ||
-      (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY)) &&
+    (localTestMode() || (process.env.SUPABASE_URL && supabaseServerKey())) &&
     (process.env.CARDIOAHEAD_SESSION_SECRET?.length ?? 0) >= 32,
   );
 }

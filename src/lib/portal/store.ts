@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@supabase/supabase-js";
-import { BUCKET, localTestMode } from "./config";
+import { BUCKET, localTestMode, supabaseServerKey } from "./config";
 import { localStore } from "./local-store";
 import type {
   Appointment,
@@ -34,11 +34,9 @@ export interface PortalStore {
   audit(value: AuditEvent): Promise<void>;
 }
 export function supabaseAdmin() {
-  return createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false, autoRefreshToken: false } },
-  );
+  return createClient(process.env.SUPABASE_URL!, supabaseServerKey()!, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 const checked = <T>(result: { data: T; error: unknown }) => {
   if (result.error) throw new Error("STORAGE_OPERATION_FAILED");

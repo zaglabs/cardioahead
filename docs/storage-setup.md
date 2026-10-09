@@ -34,13 +34,15 @@ Emails contain only a login code and instructions, with no medical information o
 
 ## Vercel production variables
 
+When connected through Vercel Marketplace, SUPABASE_URL and SUPABASE_SECRET_KEY are synchronized automatically. The app prefers the modern secret key and also supports SUPABASE_SERVICE_ROLE_KEY for legacy installations. Leave the integration-managed values unchanged.
+
 Add these in the project Settings > Environment Variables for Production:
 
 | Name | Value |
 | --- | --- |
 | NEXT_PUBLIC_SITE_URL | https://www.cardioahead.com |
 | SUPABASE_URL | The Supabase project HTTPS URL |
-| SUPABASE_SERVICE_ROLE_KEY | The server-side service-role key |
+| SUPABASE_SECRET_KEY | The server-side secret key (automatically added by the integration) |
 | CARDIOAHEAD_SESSION_SECRET | A cryptographically random secret of at least 32 characters |
 | RESEND_API_KEY | The Resend sending API key |
 | RESEND_FROM_EMAIL | CardioAhead <login@cardioahead.com>, or your verified sender |
