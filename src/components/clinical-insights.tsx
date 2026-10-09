@@ -1,4 +1,6 @@
 "use client";
+import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
+
 import { useCallback, useEffect, useState } from "react";
 import {
   FileText,
@@ -153,26 +155,31 @@ export function ClinicalInsights({
         <div className="empty-report">
           <Heart size={30} />
           <h3>
-            {appointment.status === "invited"
-              ? t("ממתינים לשליחת המסמכים.")
-              : data.configured
-                ? t("מכינים את הסיכום מהמסמכים.")
-                : t("חיבור קורא המסמכים נדרש.")}
+            {data.analysis?.status === "failed"
+              ? t("הכנת הסיכום נכשלה.")
+              : appointment.status === "invited"
+                ? t("ממתינים לשליחת המסמכים.")
+                : data.configured
+                  ? t("מכינים את הסיכום מהמסמכים.")
+                  : t("חיבור קורא המסמכים נדרש.")}
           </h3>
           <p>
-            {appointment.status === "invited"
-              ? t("הסיכום יוכן לאחר שהמטופל ישלח את המסמכים למרפאה.")
-              : data.configured
-                ? t(
-                    "הקבצים נקראים ונשמרת טיוטה עם הפניות למקורות. אין צורך להישאר בעמוד.",
-                  )
-                : t("עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.")}
+            {data.analysis?.status === "failed"
+              ? t("אפשר לנסות שוב לאחר תיקון החיבור.")
+              : appointment.status === "invited"
+                ? t("הסיכום יוכן לאחר שהמטופל ישלח את המסמכים למרפאה.")
+                : data.configured
+                  ? t(
+                      "הקבצים נקראים ונשמרת טיוטה עם הפניות למקורות. אין צורך להישאר בעמוד.",
+                    )
+                  : t("עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.")}
           </p>
           {data.analysis?.status === "failed" && (
             <>
               <p className="form-error">
                 {t(
-                  "הכנת הסיכום לא הושלמה. בדקו את חיבור השירות ונסו שוב בעוד דקה.",
+                  AI_FAILURE_MESSAGES[data.analysis.error_code || ""] ||
+                    "הכנת הסיכום לא הושלמה. בדקו את חיבור השירות ונסו שוב בעוד דקה.",
                 )}
               </p>
               <button

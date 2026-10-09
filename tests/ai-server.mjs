@@ -168,11 +168,15 @@ http
       },
     };
     if (claude) {
+      // Exercise the actual non-nullable Claude wire format.
+      const wire = JSON.parse(JSON.stringify(summary, (key, value) =>
+        value === null && key === "date" ? "" :
+        value === null && key === "key_value" ? {he:"",en:""} : value));
       res.end(
         JSON.stringify({
           id: randomUUID(),
           stop_reason: "end_turn",
-          content: [{ type: "text", text: JSON.stringify(summary) }],
+          content: [{ type: "text", text: JSON.stringify(wire) }],
         }),
       );
       return;

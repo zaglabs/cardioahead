@@ -60,5 +60,19 @@
   "עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.": "AI document processing is waiting for configuration and approval.",
   "בשלב הבדיקות, רק קובצי PDF פיקטיביים שאושרו למערכת נשלחים לשירות AI שנבחר ואושר, Claude או OpenAI. נשמרת טיוטת סיכום עם הפניות למסמכי המקור ומידע חסר לבדיקה. המצגת מוצעת לרופא ונוצרת רק לאחר בקשה מפורשת, ואז נשמרת בתיק. הסיכום וההמחשה דורשים בדיקת רופא ואינם מהווים אבחנה או תכנית טיפול עצמאית.": "During testing, only verified fictional PDFs are sent to the chosen and approved AI provider, Claude or OpenAI. A draft summary is saved with source references and missing information to check. A presentation is proposed to the doctor, created only on explicit request, and then saved in the record. Both require clinician review and are not independent diagnoses or treatment plans.",
   "בדקתי שהמסמכים שייכים לתיק הבדיקה, ואני מאשר/ת לצוות המרפאה לצפות בהם ולעבד את מסמכי הבדיקה באמצעות שירות AI מאושר.": "I have checked that these documents belong to the test case and allow the clinic team to view them and process the test documents using an approved AI service.",
-  "המסמכים נועדו להכין את המידע לעיון הרופא. טיוטת סיכום עם הפניות למקורות מוכנה לצוות המרפאה, ואינה מחליפה ייעוץ או בדיקה רפואית.": "The documents prepare information for your doctor. A source-cited summary draft is prepared for the clinic team and does not replace medical advice or an examination."
+  "המסמכים נועדו להכין את המידע לעיון הרופא. טיוטת סיכום עם הפניות למקורות מוכנה לצוות המרפאה, ואינה מחליפה ייעוץ או בדיקה רפואית.": "The documents prepare information for your doctor. A source-cited summary draft is prepared for the clinic team and does not replace medical advice or an examination.",
+  "הכנת הסיכום נכשלה.": "Summary preparation failed.",
+  "יתרת הזיכויים בחשבון Claude אינה מספיקה. הוסיפו זיכויים לחשבון ה-API ואז נסו שוב.": "Your Claude API account has insufficient credits. Add API credits, then retry.",
+  "מפתח ה-API נדחה. בדקו שהמפתח ב-Vercel תקין ופעיל.": "The API key was rejected. Check that the key saved in Vercel is valid and active.",
+  "המודל שנבחר אינו זמין לחשבון ה-API. יש לבדוק את בחירת המודל.": "The selected model is not available to this API account. Check the model setting.",
+  "שירות ה-AI דחה את מבנה הבקשה. נדרש תיקון בחיבור המערכת.": "The AI service rejected the request format. The integration needs a correction.",
+  "שירות ה-AI דורש בקשה במצב הזרמה עבור תקציב הפלט שנבחר.": "The AI service requires streaming for the selected output budget.",
+  "שירות ה-AI לא הצליח לקבל את קובצי הבדיקה. יש לבדוק את תקינות ה-PDF.": "The AI service could not accept the test documents. Check the PDFs.",
+  "הבקשה חרגה ממגבלת הקצב של שירות ה-AI. המתינו ונסו שוב.": "The AI service rate limit was reached. Wait and retry.",
+  "שירות ה-AI לא השלים את הבקשה בזמן. ניתן לנסות שוב.": "The AI service did not finish in time. You can retry.",
+  "שירות ה-AI דחה את הבקשה. בדיקת החיבור תעזור לזהות את הסיבה.": "The AI service rejected the request. A connection check can identify the reason.",
+  "טיוטת ה-AI לא עמדה במבנה הנדרש. לא הוצג סיכום לא תקין.": "The AI draft did not match the required structure. An invalid summary was not displayed.",
+  "טיוטת ה-AI כללה הפניה למקור שלא ניתן לאמת. יש לנסות שוב.": "The AI draft included a source reference that could not be validated. Please retry.",
+  "הכנת הסיכום לא הושלמה. בדקו את החיבור ונסו שוב.": "The summary could not be completed. Check the connection and retry.",
+  "אפשר לנסות שוב לאחר תיקון החיבור.": "You can retry after the connection has been corrected."
 }

@@ -280,3 +280,30 @@ test("Claude reads actual approved PDF bytes through Messages and persists the s
   await owner.dispose();
   await patient.dispose();
 });
+
+test("failed summaries show the actual failure instead of a preparing message", async ({page,playwright}) => {
+  const owner=await playwright.request.newContext({baseURL:origin,storageState:"tmp/owner-auth.json"});
+  const label="Failure UI "+test.info().project.name;
+  const invitation=await (await owner.post("/api/clinic/appointments",{
+    headers,data:{patientLabel:label,language:"en"},
+  })).json();
+  await page.context().addCookies(JSON.parse(fs.readFileSync("tmp/owner-auth.json","utf8")).cookies);
+  await page.route("**/api/clinic/appointments/"+invitation.appointment.id+"/analysis",async route=>{
+    if(route.request().method()!=="GET") throw new Error("A failed report must not automatically retry");
+    await route.fulfill({json:{
+      analysis:{status:"failed",summary:null,sources:[],error_code:"AI_REQUEST_FORMAT",attempts:1},
+      presentation:null,configured:true,can_resume:false,
+    }});
+  });
+  await page.goto("/admin?lang=en");
+  await page.locator(".case-card").filter({hasText:label}).click();
+  await page.getByRole("tab",{name:"Pre-visit summary"}).click();
+  await expect(page.getByRole("heading",{name:"Summary preparation failed."})).toBeVisible();
+  await expect(page.getByText("The AI service rejected the request format. The integration needs a correction.",{exact:true})).toBeVisible();
+  await expect(page.getByText("Preparing the document summary.",{exact:true})).toHaveCount(0);
+  await expect(page.getByRole("button",{name:"Retry summary preparation"})).toBeEnabled();
+  await page.getByLabel("Choose language").selectOption("he");
+  await expect(page.getByRole("heading",{name:"הכנת הסיכום נכשלה."})).toBeVisible();
+  await expect(page.getByText("שירות ה-AI דחה את מבנה הבקשה. נדרש תיקון בחיבור המערכת.",{exact:true})).toBeVisible();
+  await owner.dispose();
+});

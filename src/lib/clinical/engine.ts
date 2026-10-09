@@ -1,3 +1,4 @@
+import { AI_FAILURE_MESSAGES } from "./errors";
 import "server-only";
 import { randomUUID } from "node:crypto";
 import { PDFDocument } from "pdf-lib";
@@ -95,6 +96,7 @@ export async function runAnalysis(id: string) {
     await db.finish(id, token, summary, sources, model);
   } catch (error) {
     const permitted = [
+      ...Object.keys(AI_FAILURE_MESSAGES),
       "TEST_DOCUMENT_ONLY",
       "SOURCE_LIMIT",
       "AI_KEY_INVALID",

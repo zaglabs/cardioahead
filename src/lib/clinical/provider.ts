@@ -1,3 +1,5 @@
+import { claudeSummarySchema, normalizeClaudeSummary } from "./claude-schema";
+import { classifyProviderFailure } from "./errors";
 import "server-only";
 import { localTestMode } from "@/lib/portal/config";
 import { summarySchema } from "./schema";
@@ -31,29 +33,6 @@ function url(provider: AIProvider) {
     ? "https://api.anthropic.com/v1/messages"
     : "https://api.openai.com/v1/responses";
 }
-// Anthropic accepts a reduced schema. The original constraints are still checked locally.
-function claudeSchema(value: unknown): unknown {
-  if (Array.isArray(value)) return value.map(claudeSchema);
-  if (value && typeof value === "object") {
-    const ignored = [
-      "minimum",
-      "maximum",
-      "minLength",
-      "maxLength",
-      "maxItems",
-    ];
-    return Object.fromEntries(
-      Object.entries(value)
-        .filter(
-          ([key, v]) =>
-            !ignored.includes(key) &&
-            !(key === "minItems" && typeof v === "number" && v > 1),
-        )
-        .map(([k, v]) => [k, claudeSchema(v)]),
-    );
-  }
-  return value;
-}
 export async function requestClinicalSummary(
   instructions: string,
   content: Record<string, unknown>[],
@@ -74,7 +53,9 @@ export async function requestClinicalSummary(
     body = {
       model,
       max_tokens: 18000,
-      system: instructions,
+      system:
+        instructions +
+        '\nClaude wire format: date must be an empty string when not documented; key_value must be {he: "", en: ""} when there is no documented measurement. Quotes must be at most 350 characters. This replaces null placeholders only; preserve all clinical uncertainty and citations.',
       messages: [
         {
           role: "user",
@@ -94,7 +75,7 @@ export async function requestClinicalSummary(
         },
       ],
       output_config: {
-        format: { type: "json_schema", schema: claudeSchema(summarySchema) },
+        format: { type: "json_schema", schema: claudeSummarySchema },
       },
     };
   } else {
@@ -123,14 +104,15 @@ export async function requestClinicalSummary(
     cache: "no-store",
     redirect: "error",
   });
-  if (!response.ok)
-    throw new Error(
-      response.status === 401 || response.status === 403
-        ? "AI_KEY_INVALID"
-        : response.status === 429
-          ? "AI_RATE_LIMIT"
-          : "AI_PROVIDER_ERROR",
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    const code = classifyProviderFailure(response.status, payload);
+    console.error(
+      "AI request rejected",
+      JSON.stringify({ provider, status: response.status, code }),
     );
+    throw new Error(code);
+  }
   const result = await response.json();
   let text: string;
   if (provider === "claude") {
@@ -154,5 +136,9 @@ export async function requestClinicalSummary(
       .map((c: { text: string }) => c.text)
       .join("");
   }
-  return { value: JSON.parse(text), model };
+  const value = JSON.parse(text);
+  return {
+    value: provider === "claude" ? normalizeClaudeSummary(value) : value,
+    model,
+  };
 }
