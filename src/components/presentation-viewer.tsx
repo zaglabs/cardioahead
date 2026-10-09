@@ -10,18 +10,37 @@ import {
 } from "lucide-react";
 import { useLanguage } from "./language-provider";
 import { ClinicalScene } from "./clinical-scene";
+import {
+  useIllustrationMotion,
+  useReducedMotion,
+} from "./use-illustration-motion";
 import type { PresentationRecord } from "@/lib/clinical/types";
 export function PresentationViewer({ record }: { record: PresentationRecord }) {
   const { language, t } = useLanguage();
   const [index, setIndex] = useState(0),
-    [motion, setMotion] = useState(false),
+    [motion, setMotion] = useState(true),
+    [slow, setSlow] = useState(false),
     [intervention, setIntervention] = useState(false);
   const container = useRef<HTMLDivElement>(null);
   const slide = record.content.slides[index];
   const count = record.content.slides.length;
+  const reducedMotion = useReducedMotion();
+  const { progress, seek } = useIllustrationMotion(
+    motion && !reducedMotion && slide.kind !== "care",
+    slow ? 0.5 : 1,
+  );
+  const cardiac =
+    slide.kind === "pumping" ||
+    slide.kind === "valve" ||
+    slide.kind === "rhythm";
+  function inspectPhase(value: number) {
+    setMotion(false);
+    seek(value);
+  }
   function move(next: number) {
     setIndex(next);
     setIntervention(false);
+    seek(0.16);
   }
   async function fullscreen() {
     if (container.current?.requestFullscreen)
@@ -54,11 +73,57 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
           )}
         </div>
         <div className="presentation-graphic">
+          {slide.kind !== "care" && (
+            <>
+              <div className="mechanism-controls">
+                <button
+                  className="mechanism-play"
+                  aria-pressed={motion && !reducedMotion}
+                  disabled={reducedMotion}
+                  onClick={() => setMotion(!motion)}
+                >
+                  {motion && !reducedMotion ? (
+                    <Pause size={18} />
+                  ) : (
+                    <Play size={18} />
+                  )}
+                  {motion && !reducedMotion
+                    ? t("עצירת התנועה")
+                    : t("הפעלת ההמחשה")}
+                </button>
+                <button
+                  className="mechanism-speed"
+                  aria-pressed={slow}
+                  disabled={reducedMotion}
+                  onClick={() => setSlow(!slow)}
+                >
+                  {t("הילוך איטי")}
+                </button>
+              </div>
+              {reducedMotion && (
+                <p className="mechanism-motion-note">
+                  {t(
+                    "הפחתת תנועה פעילה. ניתן לצפות בשלבי הפעולה בעזרת הכפתורים.",
+                  )}
+                </p>
+              )}
+            </>
+          )}
           <ClinicalScene
             kind={slide.kind}
-            motion={motion}
+            progress={progress}
             intervention={intervention}
           />
+          {cardiac && (
+            <div className="mechanism-inspect">
+              <button onClick={() => inspectPhase(0.2)}>
+                {t("הצגת מילוי")}
+              </button>
+              <button onClick={() => inspectPhase(0.56)}>
+                {t("הצגת פליטה")}
+              </button>
+            </div>
+          )}
         </div>
       </div>
       <div className="presentation-facts">
@@ -70,10 +135,6 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
         ))}
       </div>
       <div className="presentation-controls">
-        <button className="text-button" onClick={() => setMotion(!motion)}>
-          {motion ? <Pause size={17} /> : <Play size={17} />}{" "}
-          {motion ? t("עצירת התנועה") : t("הפעלת ההמחשה")}
-        </button>
         {slide.kind === "stent" && (
           <button
             className="text-button"

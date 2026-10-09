@@ -9,3 +9,5 @@ tmp/
 output/
 .local-test-data/
 scripts/
+
+.codex-remote-attachments/

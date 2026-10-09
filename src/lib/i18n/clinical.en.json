@@ -76,5 +76,21 @@
   "הכנת הסיכום לא הושלמה. בדקו את החיבור ונסו שוב.": "The summary could not be completed. Check the connection and retry.",
   "אפשר לנסות שוב לאחר תיקון החיבור.": "You can retry after the connection has been corrected.",
   "הסיכום ממתין לתחילת העיבוד.": "Waiting to start summary preparation.",
-  "הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.": "The request has been received and will start shortly. This status updates automatically."
+  "הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.": "The request has been received and will start shortly. This status updates automatically.",
+  "העלייה השמאלית": "Left atrium",
+  "מילוי החדר": "Ventricular filling",
+  "התכווצות ופליטה": "Contraction and ejection",
+  "תחילת ההתכווצות": "Contraction begins",
+  "הרפיה": "Relaxation",
+  "זרימה בכיוון אחד": "Forward blood flow",
+  "החלקיקים מואצים במעבר הצר. הרובד נשאר בדופן.": "Particles accelerate through the narrow passage. Plaque remains in the wall.",
+  "המסתם המיטרלי פתוח; דם נכנס לחדר השמאלי.": "The mitral valve is open; blood enters the left ventricle.",
+  "שני המסתמים סגורים לזמן קצר בתחילת ההתכווצות.": "Both valves are briefly closed as contraction begins.",
+  "המסתם המיטרלי נסגר; דם נפלט דרך מסתם אבי העורקים.": "The mitral valve closes; blood is ejected through the aortic valve.",
+  "החדר נרפה; מסתם אבי העורקים נסגר לפני המילוי הבא.": "The ventricle relaxes; the aortic valve closes before the next filling phase.",
+  "המחשה מואטת של מנגנון כללי — לא מדידה של המטופל": "Slowed illustration of a general mechanism — not a patient measurement",
+  "הילוך איטי": "Slow motion",
+  "הפחתת תנועה פעילה. ניתן לצפות בשלבי הפעולה בעזרת הכפתורים.": "Reduced motion is enabled. Use the buttons to inspect each phase.",
+  "הצגת מילוי": "Show filling",
+  "הצגת פליטה": "Show ejection"
 }

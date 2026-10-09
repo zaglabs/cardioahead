@@ -119,38 +119,125 @@ test("provider failures distinguish API credits, authentication, model and reque
 
 const wireJS = ts.transpileModule(
   fs.readFileSync("src/lib/clinical/claude-schema.ts", "utf8"),
-  {compilerOptions: {module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022}},
+  {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022,
+    },
+  },
 ).outputText;
-const {normalizeClaudeSummary} = await import(
-  "data:text/javascript;base64," + Buffer.from(wireJS).toString("base64"),
+const { normalizeClaudeSummary } = await import(
+  "data:text/javascript;base64," + Buffer.from(wireJS).toString("base64")
 );
 test("Claude empty placeholders normalize without losing dates, values or source checks", () => {
-  const bi={he:"בדיקה",en:"Test"};
-  const fact={text:bi,date:"",refs:[{document_id:"doc",page:1,quote:"Original quotation"}]};
-  const wire={
-    overview:fact,
-    sections:["referral","history","findings","medications","allergies","plan"].map(kind=>({
-      kind,title:bi,items:[fact],missing:[],
-    })),
-    questions:[],conflicts:[],limitations:[],
-    presentation:{eligible:true,reason:bi,slides:[{
-      kind:"pumping",title:bi,explanation:bi,bullets:[fact],key_value:{he:"",en:""},
-    }]},
+  const bi = { he: "בדיקה", en: "Test" };
+  const fact = {
+    text: bi,
+    date: "",
+    refs: [{ document_id: "doc", page: 1, quote: "Original quotation" }],
   };
-  const source={document_id:"doc",filename:"test.pdf",pages:1,sha256:"hash"};
-  const normalized=normalizeClaudeSummary(wire);
-  validateSummary(normalized,[source]);
-  assert.equal(normalized.overview.date,null);
-  assert.equal(normalized.presentation.slides[0].key_value,null);
-  assert.equal(normalized.overview.refs[0].quote,"Original quotation");
-  assert.equal(wire.overview.date,""); // Never mutate the provider payload.
-  const measured=structuredClone(wire);
-  measured.overview.date="2026-10-01";
-  measured.presentation.slides[0].key_value={he:"38%",en:"38%"};
-  const retained=normalizeClaudeSummary(measured);
-  assert.equal(retained.overview.date,"2026-10-01");
-  assert.deepEqual(retained.presentation.slides[0].key_value,{he:"38%",en:"38%"});
-  const unsafe=structuredClone(wire);
-  unsafe.overview.refs[0].document_id="another-patient";
-  assert.throws(()=>validateSummary(normalizeClaudeSummary(unsafe),[source]),/INVALID_SOURCE_REFERENCE/);
+  const wire = {
+    overview: fact,
+    sections: [
+      "referral",
+      "history",
+      "findings",
+      "medications",
+      "allergies",
+      "plan",
+    ].map((kind) => ({
+      kind,
+      title: bi,
+      items: [fact],
+      missing: [],
+    })),
+    questions: [],
+    conflicts: [],
+    limitations: [],
+    presentation: {
+      eligible: true,
+      reason: bi,
+      slides: [
+        {
+          kind: "pumping",
+          title: bi,
+          explanation: bi,
+          bullets: [fact],
+          key_value: { he: "", en: "" },
+        },
+      ],
+    },
+  };
+  const source = {
+    document_id: "doc",
+    filename: "test.pdf",
+    pages: 1,
+    sha256: "hash",
+  };
+  const normalized = normalizeClaudeSummary(wire);
+  validateSummary(normalized, [source]);
+  assert.equal(normalized.overview.date, null);
+  assert.equal(normalized.presentation.slides[0].key_value, null);
+  assert.equal(normalized.overview.refs[0].quote, "Original quotation");
+  assert.equal(wire.overview.date, ""); // Never mutate the provider payload.
+  const measured = structuredClone(wire);
+  measured.overview.date = "2026-10-01";
+  measured.presentation.slides[0].key_value = { he: "38%", en: "38%" };
+  const retained = normalizeClaudeSummary(measured);
+  assert.equal(retained.overview.date, "2026-10-01");
+  assert.deepEqual(retained.presentation.slides[0].key_value, {
+    he: "38%",
+    en: "38%",
+  });
+  const unsafe = structuredClone(wire);
+  unsafe.overview.refs[0].document_id = "another-patient";
+  assert.throws(
+    () => validateSummary(normalizeClaudeSummary(unsafe), [source]),
+    /INVALID_SOURCE_REFERENCE/,
+  );
+});
+
+const motionJS = ts.transpileModule(
+  fs.readFileSync("src/lib/clinical/illustration-motion.ts", "utf8"),
+  {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022,
+    },
+  },
+).outputText;
+const { cardiacCycle, arteryPosition, lumenRadius } = await import(
+  "data:text/javascript;base64," + Buffer.from(motionJS).toString("base64")
+);
+test("illustration valves gate filling and ejection; flow stays forward and accelerates through narrowing", () => {
+  const fill = cardiacCycle(0.2),
+    contract = cardiacCycle(0.43),
+    eject = cardiacCycle(0.56),
+    relax = cardiacCycle(0.73);
+  assert.equal(fill.mitralOpen, true);
+  assert.equal(fill.aorticOpen, false);
+  assert.equal(contract.contraction, 0);
+  assert.equal(relax.contraction, 1);
+  assert.equal(cardiacCycle(0.7).contraction, cardiacCycle(0.92).contraction);
+  assert.equal(contract.mitralOpen, false);
+  assert.equal(contract.aorticOpen, false);
+  assert.equal(eject.mitralOpen, false);
+  assert.equal(eject.aorticOpen, true);
+  assert.equal(relax.mitralOpen, false);
+  assert.equal(relax.aorticOpen, false);
+  for (let p = 0; p < 1; p += 0.01)
+    assert.ok(!(cardiacCycle(p).mitralOpen && cardiacCycle(p).aorticOpen));
+  for (const expanded of [0, 1]) {
+    let previous = 60;
+    for (let p = 0; p < 1; p += 0.01) {
+      const x = arteryPosition(p, expanded);
+      assert.ok(x >= previous && x <= 560);
+      previous = x;
+    }
+  }
+  const central = arteryPosition(0.51, 0) - arteryPosition(0.49, 0);
+  const proximal = arteryPosition(0.11, 0) - arteryPosition(0.09, 0);
+  assert.ok(central > proximal); // No misleading slowdown in the stenotic throat.
+  assert.ok(lumenRadius(310, 1) > lumenRadius(310, 0));
+  assert.ok(lumenRadius(310, 1) < 42); // Plaque remains after the mesh expands.
 });
