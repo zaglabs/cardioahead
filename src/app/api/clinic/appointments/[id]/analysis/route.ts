@@ -15,6 +15,12 @@ export const maxDuration = 300;
 async function appointment(id: string) {
   const a = await getStore().appointment(id);
   if (!a) throw new PortalError(404, "NOT_FOUND", "הביקור לא נמצא.");
+  if (a.deletion_requested_at)
+    throw new PortalError(
+      410,
+      "CARD_DELETING",
+      "התיק נמצא בתהליך מחיקה ואינו זמין לגישה.",
+    );
   return a;
 }
 export async function GET(

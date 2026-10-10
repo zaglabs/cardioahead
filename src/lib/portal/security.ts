@@ -185,6 +185,7 @@ export async function requirePatient() {
   if (
     !appointment ||
     appointment.revoked_at ||
+    appointment.deletion_requested_at ||
     appointment.intake_mode === "clinic" ||
     new Date(appointment.expires_at).getTime() <= Date.now()
   )
@@ -211,6 +212,7 @@ export function appointmentView(
     id: a.id,
     patient_label: a.patient_label,
     intake_mode: a.intake_mode || "invitation",
+    deletion_requested_at: a.deletion_requested_at || null,
     appointment_at: a.appointment_at,
     status: a.status,
     expires_at: a.expires_at,

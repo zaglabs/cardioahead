@@ -3504,3 +3504,27 @@ button.document-preview-row:focus-visible { outline: 3px solid #738e5b; outline-
 .presentation-viewer .unsupported-patient-visual p { color: #d8e8d9; line-height: 1.7; }
 @media (max-width:680px) { .patient-heart-comparison { grid-template-columns: 1fr; gap: 16px; } }
 .patient-heart-comparison h4 { min-height: 68px; display: flex; align-items: center; justify-content: center; }
+.button-danger { color: white; background: #a73835; border: 1px solid #a73835; }
+.button-danger:hover { background: #892c2a; }
+.staff-table-tools { display: flex; gap: 18px; align-items: center; margin-block: 22px; flex-wrap: wrap; }
+.staff-table-tools .search-field { flex: 1; min-width: 220px; }
+.staff-table-tools > label { display: flex; align-items: center; gap: 10px; color: var(--muted); font-size: .9375rem; }
+.staff-table-tools select, .staff-table select { padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px; background: white; color: var(--ink); font: inherit; min-height: 44px; }
+.staff-table-scroll { overflow-x: auto; max-width: 100%; border: 1px solid var(--line); border-radius: 12px; background: white; }
+.staff-table { width: 100%; border-collapse: collapse; font-size: .9375rem; min-width: 820px; }
+.staff-table thead { background: #f0f4eb; }
+.staff-table th,.staff-table td { padding: 16px 18px; text-align: start; border-bottom: 1px solid var(--line); vertical-align: middle; }
+.staff-table th { font-weight: 650; }
+.staff-table tbody tr:last-child th,.staff-table tbody tr:last-child td { border-bottom: 0; }
+.staff-table tbody tr:hover { background: #fafcf7; }
+.staff-table tbody th { font-weight: 500; overflow-wrap: anywhere; }
+.staff-table select { min-width: 148px; }
+.staff-table .staff-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.staff-table .text-button { font-size: .875rem; min-height: 40px; white-space: nowrap; }
+.staff-table time { white-space: nowrap; color: var(--muted); }
+.staff-table .owner-lock { white-space: nowrap; }
+.staff-table-scroll:focus-visible { outline: 3px solid #738e5b; outline-offset: 3px; }
+@media (max-width:680px) { .staff-table-tools { align-items: stretch; gap: 10px; } .staff-table-tools .search-field { flex-basis: 100%; } }
+.staff-table .staff-status { display: inline-flex; align-items: center; white-space: nowrap; line-height: 1.4; }
+.staff-table-mobile-hint { display: none; }
+@media (max-width:680px) { .staff-table-mobile-hint { display: block; color: var(--muted); font-size: .875rem; margin-bottom: 10px; } }

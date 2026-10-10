@@ -27,6 +27,12 @@ export async function POST(
         "אשרו שהמסמכים שייכים לתיק הבדיקה לפני השליחה.",
       );
     const appointment = await getStore().appointment(id);
+    if (appointment?.deletion_requested_at)
+      throw new PortalError(
+        410,
+        "CARD_DELETING",
+        "התיק נמצא בתהליך מחיקה ואינו זמין לגישה.",
+      );
     if (!appointment)
       throw new PortalError(404, "NOT_FOUND", "הביקור לא נמצא.");
     if (

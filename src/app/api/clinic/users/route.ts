@@ -57,3 +57,40 @@ export async function PATCH(request: Request) {
     return failure(e);
   }
 }
+
+export async function DELETE(request: Request) {
+  try {
+    sameOrigin(request);
+    const admin = await requireAdmin(),
+      input = await body(request);
+    const id = text(input.id, 36),
+      email = text(input.email, 254).toLowerCase();
+    if (
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        id,
+      ) ||
+      input.confirmed !== true
+    )
+      throw new PortalError(
+        400,
+        "CONFIRMATION_REQUIRED",
+        "אשרו את מחיקת המשתמש.",
+      );
+    if (id === admin.id || email === OWNER_EMAIL)
+      throw new PortalError(403, "OWNER_PROTECTED", "חשבון מנהל המערכת מוגן.");
+    const store = authStore(),
+      user = (await store.users()).find((v) => v.id === id);
+    if (!user) throw new PortalError(404, "USER_NOT_FOUND", "החשבון לא נמצא.");
+    if (user.email !== email)
+      throw new PortalError(
+        409,
+        "USER_CHANGED",
+        "המשתמש השתנה. רעננו לפני המחיקה.",
+      );
+    if (!(await store.deleteUser(admin.id, id, email)))
+      throw new PortalError(409, "DELETE_FAILED", "מחיקת המשתמש לא הושלמה.");
+    return json({ ok: true, users: await store.users() });
+  } catch (e) {
+    return failure(e);
+  }
+}

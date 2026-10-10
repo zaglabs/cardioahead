@@ -4,6 +4,7 @@ import { localTestMode } from "./config";
 import { localTransaction } from "./local-store";
 import { supabaseAdmin } from "./store";
 import { OWNER_EMAIL, isAdmin } from "./staff-access";
+import { deletionResult } from "./deletion-result";
 import type { Staff, StaffStatus } from "./types";
 export type OtpChallenge = {
   id: string;
@@ -104,6 +105,34 @@ export function authStore() {
           });
           return staff;
         }),
+      deleteUser: (actor: string, id: string, email: string) =>
+        localTransaction((s) => {
+          if (!s.staff.some((v) => v.id === actor && isAdmin(v))) return false;
+          const user = s.staff.find((v) => v.id === id && v.email === email);
+          if (!user || user.email === OWNER_EMAIL) return false;
+          s.staff = s.staff.filter((v) => v.id !== id);
+          s.sessions = s.sessions.filter((v) => v.staff_id !== id);
+          s.otps = s.otps.filter((v) => v.email !== email);
+          for (const a of s.appointments)
+            if (a.created_by === id) a.created_by = null;
+          for (const a of s.analyses)
+            if (a.reviewed_by === id) a.reviewed_by = null;
+          for (const a of s.presentations) {
+            if (a.created_by === id) a.created_by = null;
+            if (a.reviewed_by === id) a.reviewed_by = null;
+          }
+          s.audit.push({
+            event: "staff_user_deleted",
+            actor_id: actor,
+            details: {
+              target_user_id: id,
+              target_email: email,
+              previous_role: user.role,
+            },
+            at: new Date().toISOString(),
+          });
+          return true;
+        }),
       users: () =>
         localTransaction((s) =>
           [...s.staff].sort((a, b) => b.created_at.localeCompare(a.created_at)),
@@ -160,6 +189,17 @@ export function authStore() {
         }),
       );
       return result as Staff | null;
+    },
+    async deleteUser(actor: string, id: string, email: string) {
+      return (
+        deletionResult(
+          await db.rpc("delete_clinic_staff", {
+            p_actor: actor,
+            p_id: id,
+            p_email: email,
+          }),
+        ) === true
+      );
     },
     async users() {
       return check(

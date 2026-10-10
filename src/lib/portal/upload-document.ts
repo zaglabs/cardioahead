@@ -11,6 +11,12 @@ export async function uploadDocument(
   appointment: Appointment,
   actor?: string,
 ) {
+  if (appointment.deletion_requested_at)
+    throw new PortalError(
+      410,
+      "CARD_DELETING",
+      "התיק נמצא בתהליך מחיקה ואינו זמין לגישה.",
+    );
   if (appointment.status !== "invited")
     throw new PortalError(
       409,

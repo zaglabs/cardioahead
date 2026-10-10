@@ -134,7 +134,7 @@ test("sole admin approves staff; staff cannot manage users; suspension ends exis
   await expect(
     admin.getByRole("heading", { name: "צוות המרפאה" }),
   ).toBeVisible();
-  const card = admin.locator(".staff-card").filter({ hasText: email });
+  const card = admin.locator(".staff-row").filter({ hasText: email });
   await card.getByLabel("הרשאה עבור " + email).selectOption("professor");
   await card.getByRole("button", { name: "אישור גישה", exact: true }).click();
   await expect(card.getByText("גישה מאושרת", { exact: true })).toBeVisible();

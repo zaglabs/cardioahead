@@ -680,3 +680,216 @@ test("clinic intake bypasses invitation expiry only for active staff and locks u
     await db.close();
   }
 });
+
+test("deletion protects the owner, preserves staff-created clinical records and blocks a card until file cleanup finishes", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(
+      "create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);",
+    );
+    for (const name of [
+      "202610040001_portal.sql",
+      "202610040002_staff_otp.sql",
+      "202610090003_clinical_records.sql",
+      "202610100004_clinic_intake.sql",
+      "202610100005_deletion.sql",
+    ])
+      await db.exec(
+        fs.readFileSync(
+          path.join(process.cwd(), "supabase/migrations", name),
+          "utf8",
+        ),
+      );
+    const owner = (
+      await db.query(
+        "select id from public.clinic_staff where email='galadv73@gmail.com'",
+      )
+    ).rows[0].id;
+    const staff = randomUUID(),
+      card = randomUUID(),
+      token = randomUUID();
+    await db.query(
+      "insert into public.clinic_staff(id,email,role,status) values($1,'delete-user@test.invalid','professor','active')",
+      [staff],
+    );
+    await db.query(
+      "insert into public.appointments(id,patient_label,token_hash,pin_digest,expires_at,created_by,status) values($1,'Deletion fixture','card-token','pin',now()+interval '1 day',$2,'submitted')",
+      [card, staff],
+    );
+    const record = {
+      id: randomUUID(),
+      appointment_id: card,
+      filename: "fake.pdf",
+      storage_path: card + "/fake.pdf",
+      sha256: "hash",
+      bytes: 1024,
+      created_at: new Date().toISOString(),
+    };
+    await db.query(
+      "insert into public.documents(id,appointment_id,filename,storage_path,sha256,bytes) values($1,$2,$3,$4,$5,$6)",
+      [
+        record.id,
+        card,
+        record.filename,
+        record.storage_path,
+        record.sha256,
+        record.bytes,
+      ],
+    );
+    await db.query(
+      "insert into public.visit_analysis(appointment_id,status,reviewed_by) values($1,'ready',$2)",
+      [card, staff],
+    );
+    await db.query(
+      "insert into public.visit_presentations(appointment_id,source_hash,content,created_by,reviewed_by) values($1,'hash','{}',$2,$2)",
+      [card, staff],
+    );
+    await db.query(
+      "insert into public.portal_sessions(session_hash,kind,staff_id,expires_at) values('staff-session','staff',$1,now()+interval '1 hour')",
+      [staff],
+    );
+    await assert.rejects(() =>
+      db.query(
+        "select public.delete_clinic_staff($1,$2,'galadv73@gmail.com')",
+        [owner, owner],
+      ),
+    );
+    await assert.rejects(() =>
+      db.query(
+        "select public.delete_clinic_staff($1,$2,'delete-user@test.invalid')",
+        [staff, staff],
+      ),
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.delete_clinic_staff($1,$2,'delete-user@test.invalid') ok",
+          [owner, staff],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.portal_sessions where staff_id=$1",
+          [staff],
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select created_by from public.appointments where id=$1",
+          [card],
+        )
+      ).rows[0].created_by,
+      null,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select created_by from public.visit_presentations where appointment_id=$1",
+          [card],
+        )
+      ).rows[0].created_by,
+      null,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.documents where appointment_id=$1",
+          [card],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await assert.rejects(() =>
+      db.query("select public.begin_patient_card_delete($1,$2,'Wrong card')", [
+        owner,
+        card,
+      ]),
+    );
+    const begin = (
+      await db.query(
+        "select public.begin_patient_card_delete($1,$2,'Deletion fixture') result",
+        [owner, card],
+      )
+    ).rows[0].result;
+    assert.deepEqual(begin.paths, [record.storage_path]);
+    assert.ok(
+      (
+        await db.query(
+          "select deletion_requested_at from public.appointments where id=$1",
+          [card],
+        )
+      ).rows[0].deletion_requested_at,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.visit_analysis where appointment_id=$1",
+          [card],
+        )
+      ).rows[0].n,
+      0,
+    );
+    await assert.rejects(() =>
+      db.query("select public.claim_visit_analysis($1,'hash','[]',$2)", [
+        card,
+        token,
+      ]),
+    );
+    await assert.rejects(() =>
+      db.query(
+        "insert into public.documents(id,appointment_id,filename,storage_path,sha256,bytes) values($1,$2,'late.pdf',$3,'other',1000)",
+        [randomUUID(), card, card + "/late.pdf"],
+      ),
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.verify_patient_pin('card-token','pin','blocked') ok",
+        )
+      ).rows[0].ok,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query("select public.finish_patient_card_delete($1,$2) ok", [
+          owner,
+          card,
+        ])
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.documents where appointment_id=$1",
+          [card],
+        )
+      ).rows[0].n,
+      0,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.appointments where id=$1",
+          [card],
+        )
+      ).rows[0].n,
+      0,
+    );
+    await db.exec("set role anon");
+    await assert.rejects(() =>
+      db.query("select public.finish_patient_card_delete($1,$2)", [
+        owner,
+        card,
+      ]),
+    );
+  } finally {
+    await db.close();
+  }
+});

@@ -34,7 +34,10 @@ export function clinicalStore() {
         localTransaction((s) => {
           if (
             !s.appointments.some(
-              (a) => a.id === id && a.status !== "invited",
+              (a) =>
+                a.id === id &&
+                !a.deletion_requested_at &&
+                a.status !== "invited",
             ) ||
             s.analyses.some((a) => a.appointment_id === id)
           )
@@ -64,7 +67,12 @@ export function clinicalStore() {
       ) =>
         localTransaction((s) => {
           if (
-            !s.appointments.some((a) => a.id === id && a.status !== "invited")
+            !s.appointments.some(
+              (a) =>
+                a.id === id &&
+                !a.deletion_requested_at &&
+                a.status !== "invited",
+            )
           )
             return false;
           const a = s.analyses.find((a) => a.appointment_id === id);

@@ -59,7 +59,7 @@ export type PresentationRecord = {
   id: string;
   appointment_id: string;
   source_hash: string;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   reviewed_by: string | null;
   reviewed_at: string | null;

@@ -1,6 +1,6 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClinicalInsights } from "./clinical-insights";
@@ -26,6 +26,7 @@ import {
   Plus,
   X,
   Copy,
+  Trash2,
 } from "lucide-react";
 import type { AppointmentView, Staff } from "@/lib/portal/types";
 const labels = {
@@ -80,6 +81,14 @@ function ClinicWorkspace({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [copied, setCopied] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState<AppointmentView | null>(
+    null,
+  );
+  const deleteDialog = useRef<HTMLDialogElement>(null);
+  useEffect(() => {
+    if (deleteTarget) deleteDialog.current?.showModal();
+    else deleteDialog.current?.close();
+  }, [deleteTarget]);
   const router = useRouter();
   const active = appointments.find((a) => a.id === selected);
   async function api(url: string, init?: RequestInit) {
@@ -161,6 +170,32 @@ function ClinicWorkspace({
       setBusy(false);
     }
   }
+  async function deleteCard() {
+    if (!deleteTarget) return;
+    const target = deleteTarget;
+    setBusy(true);
+    setError("");
+    try {
+      await api("/api/clinic/appointments/" + target.id, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          confirmed: true,
+          patientLabel: target.patient_label,
+        }),
+      });
+      setAppointments((current) => current.filter((a) => a.id !== target.id));
+      setSelected((current) => (current === target.id ? null : current));
+      setDeleteTarget(null);
+      await refresh();
+    } catch (e) {
+      // Refresh the blocked card after a partial cleanup, preserving its retry control.
+      await refresh();
+      setError((e as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
   async function logout() {
     setBusy(true);
     try {
@@ -185,6 +220,7 @@ function ClinicWorkspace({
     }
   }
   function statusLabel(a: AppointmentView) {
+    if (a.deletion_requested_at) return t("המחיקה ממתינה להשלמה");
     return a.intake_mode === "clinic" && a.status === "invited"
       ? t("טיוטה במרפאה")
       : a.intake_mode !== "clinic" && a.revoked_at
@@ -535,7 +571,15 @@ function ClinicWorkspace({
                   </button>
                 </div>
                 <div className="report-panel">
-                  {tab === "documents" ? (
+                  {active.deletion_requested_at ? (
+                    <div className="info-box">
+                      <p>
+                        {t(
+                          "התיק חסום לגישה בזמן הסרת הקבצים. אם המחיקה נעצרה, לחצו על השלמת המחיקה.",
+                        )}
+                      </p>
+                    </div>
+                  ) : tab === "documents" ? (
                     <>
                       <p className="form-note">
                         {active.intake_mode === "clinic"
@@ -598,25 +642,41 @@ function ClinicWorkspace({
                     />
                   )}
                   <div className="case-actions">
-                    {active.status === "submitted" && (
-                      <button
-                        className="button button-dark button-small"
-                        onClick={() => void update("review")}
-                        disabled={busy}
-                      >
-                        {t("סימון כנבדק")}
-                        <Check size={16} />
-                      </button>
-                    )}
-                    {active.intake_mode !== "clinic" && !active.revoked_at && (
-                      <button
-                        className="text-button"
-                        onClick={() => void update("revoke")}
-                        disabled={busy}
-                      >
-                        {t("ביטול קישור הגישה")}
-                      </button>
-                    )}
+                    <button
+                      className="text-button danger-text"
+                      disabled={busy}
+                      onClick={() => {
+                        setError("");
+                        setDeleteTarget(active);
+                      }}
+                    >
+                      <Trash2 size={17} />
+                      {active.deletion_requested_at
+                        ? t("השלמת המחיקה")
+                        : t("מחיקת תיק מטופל")}
+                    </button>
+                    {!active.deletion_requested_at &&
+                      active.status === "submitted" && (
+                        <button
+                          className="button button-dark button-small"
+                          onClick={() => void update("review")}
+                          disabled={busy}
+                        >
+                          {t("סימון כנבדק")}
+                          <Check size={16} />
+                        </button>
+                      )}
+                    {!active.deletion_requested_at &&
+                      active.intake_mode !== "clinic" &&
+                      !active.revoked_at && (
+                        <button
+                          className="text-button"
+                          onClick={() => void update("revoke")}
+                          disabled={busy}
+                        >
+                          {t("ביטול קישור הגישה")}
+                        </button>
+                      )}
                     {active.intake_mode !== "clinic" && active.revoked_at && (
                       <span className="form-note">
                         {t("קישור הגישה בוטל. המסמכים נשמרו בתיק.")}
@@ -635,6 +695,50 @@ function ClinicWorkspace({
           </section>
         </div>
       </div>
+      <dialog
+        ref={deleteDialog}
+        className="management-confirm"
+        aria-labelledby="delete-card-title"
+        onCancel={(event) => {
+          if (busy) event.preventDefault();
+          else setDeleteTarget(null);
+        }}
+      >
+        {deleteTarget && (
+          <div className="patient-panel">
+            <h2 id="delete-card-title">{t("למחוק את תיק המטופל?")}</h2>
+            <p>
+              <strong dir="auto">{deleteTarget.patient_label}</strong>
+            </p>
+            <p>
+              {t(
+                "המחיקה תסיר לצמיתות את המסמכים, הסיכום וההסבר החזותי ותבטל את קישור הגישה. לא ניתן לבטל פעולה זו.",
+              )}
+            </p>
+            <div className="staff-actions">
+              <button
+                className="button button-danger"
+                disabled={busy}
+                onClick={() => void deleteCard()}
+              >
+                {busy ? t("מוחקים…") : t("אישור מחיקת התיק")}
+              </button>
+              <button
+                className="text-button"
+                disabled={busy}
+                onClick={() => setDeleteTarget(null)}
+              >
+                {t("חזרה")}
+              </button>
+            </div>
+            {error && (
+              <p className="form-error" role="alert">
+                {t(error)}
+              </p>
+            )}
+          </div>
+        )}
+      </dialog>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { BUCKET, localTestMode, supabaseServerKey } from "./config";
 import { localStore } from "./local-store";
 import { PortalError } from "./security";
+import { deletionResult } from "./deletion-result";
 import type {
   Appointment,
   DocumentRecord,
@@ -37,6 +38,11 @@ export interface PortalStore {
   readDocument(record: DocumentRecord): Promise<Buffer>;
   submit(id: string): Promise<boolean>;
   revoke(id: string): Promise<void>;
+  deleteAppointment(
+    id: string,
+    actor: string,
+    confirmation: string,
+  ): Promise<boolean>;
   review(id: string): Promise<void>;
   audit(value: AuditEvent): Promise<void>;
 }
@@ -153,12 +159,10 @@ export function getStore(): PortalStore {
     },
     async saveClinicDocument(record, bytes, actor) {
       checked(
-        await db.storage
-          .from(BUCKET)
-          .upload(record.storage_path, bytes, {
-            contentType: "application/pdf",
-            upsert: false,
-          }),
+        await db.storage.from(BUCKET).upload(record.storage_path, bytes, {
+          contentType: "application/pdf",
+          upsert: false,
+        }),
       );
       try {
         const result = await db.rpc("attach_clinic_document", {
@@ -199,6 +203,40 @@ export function getStore(): PortalStore {
     },
     async submit(id) {
       return checked(await db.rpc("submit_appointment", { p_id: id })) === true;
+    },
+    async deleteAppointment(id, actor, confirmation) {
+      const result = deletionResult(
+        await db.rpc("begin_patient_card_delete", {
+          p_actor: actor,
+          p_id: id,
+          p_confirmation: confirmation,
+        }),
+      ) as { paths: string[] } | null;
+      if (!result) return false;
+      if (!result.paths.every((p) => p.startsWith(id + "/")))
+        throw new PortalError(
+          503,
+          "DELETION_PENDING",
+          "המחיקה לא הושלמה. התיק חסום לגישה; אפשר לנסות שוב כדי להשלים את הסרת הקבצים.",
+        );
+      // Keep blocked metadata until private-file removal succeeds; a retry is safe.
+      if (result.paths.length) {
+        const removed = await db.storage.from(BUCKET).remove(result.paths);
+        if (removed.error)
+          throw new PortalError(
+            503,
+            "DELETION_PENDING",
+            "המחיקה לא הושלמה. התיק חסום לגישה; אפשר לנסות שוב כדי להשלים את הסרת הקבצים.",
+          );
+      }
+      return (
+        deletionResult(
+          await db.rpc("finish_patient_card_delete", {
+            p_actor: actor,
+            p_id: id,
+          }),
+        ) === true
+      );
     },
     async revoke(id) {
       checked(await db.rpc("revoke_invitation", { p_id: id }));

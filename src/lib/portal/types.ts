@@ -8,6 +8,7 @@ export type Staff = {
   created_at: string;
 };
 export type Appointment = {
+  deletion_requested_at?: string | null;
   intake_mode?: "invitation" | "clinic";
   id: string;
   patient_label: string;
@@ -18,7 +19,7 @@ export type Appointment = {
   expires_at: string;
   revoked_at: string | null;
   failed_attempts: number;
-  created_by: string;
+  created_by: string | null;
   created_at: string;
   submitted_at: string | null;
 };
@@ -39,6 +40,7 @@ export type PortalSession = {
   expires_at: string;
 };
 export type AuditEvent = {
+  details?: Record<string, unknown>;
   event: string;
   actor_id?: string;
   appointment_id?: string;
@@ -55,6 +57,7 @@ export type AppointmentView = Pick<
   | "created_at"
   | "submitted_at"
   | "intake_mode"
+  | "deletion_requested_at"
 > & { documents: DocumentView[] };
 export type DocumentView = Pick<
   DocumentRecord,

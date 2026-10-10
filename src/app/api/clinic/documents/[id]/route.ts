@@ -11,6 +11,13 @@ export async function GET(
     const store = getStore();
     const document = await store.document(id);
     if (!document) throw new PortalError(404, "NOT_FOUND", "המסמך לא נמצא.");
+    const a = await store.appointment(document.appointment_id);
+    if (!a || a.deletion_requested_at)
+      throw new PortalError(
+        410,
+        "CARD_DELETING",
+        "התיק נמצא בתהליך מחיקה ואינו זמין לגישה.",
+      );
     const bytes = await store.readDocument(document);
     await store.audit({
       event: "document_opened",

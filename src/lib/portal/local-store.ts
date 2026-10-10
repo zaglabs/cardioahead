@@ -1,12 +1,13 @@
 import "server-only";
 import { randomUUID } from "node:crypto";
-import { mkdir, readFile, writeFile, rename } from "node:fs/promises";
+import { mkdir, readFile, writeFile, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import { MAX_DOCUMENTS, localTestMode } from "./config";
 import type { PortalStore } from "./store";
 import type { AnalysisRecord, PresentationRecord } from "@/lib/clinical/types";
 import type { OtpChallenge } from "./auth-store";
 import { OWNER_EMAIL } from "./staff-access";
+import { PortalError } from "./security";
 import type {
   Staff,
   Appointment,
@@ -76,7 +77,12 @@ export async function localTransaction<T>(
   return work;
 }
 const active = (a: Appointment | undefined) =>
-  Boolean(a && !a.revoked_at && Date.parse(a.expires_at) > Date.now());
+  Boolean(
+    a &&
+    !a.deletion_requested_at &&
+    !a.revoked_at &&
+    Date.parse(a.expires_at) > Date.now(),
+  );
 const owner: Staff = {
   id: "00000000-0000-4000-8000-000000000001",
   email: OWNER_EMAIL,
@@ -93,7 +99,12 @@ const persistDocument = (
     const a = s.appointments.find((a) => a.id === record.appointment_id);
     if (actor && !s.staff.some((v) => v.id === actor && v.status === "active"))
       throw new Error("STAFF_REQUIRED");
-    if (!a || (!actor && !active(a)) || a.status !== "invited")
+    if (
+      !a ||
+      a.deletion_requested_at ||
+      (!actor && !active(a)) ||
+      a.status !== "invited"
+    )
       throw new Error("UPLOAD_CLOSED");
     const documents = s.documents.filter((d) => d.appointment_id === a.id);
     if (
@@ -138,7 +149,7 @@ export const localStore: PortalStore = {
             ? "clinic_card_created"
             : "invitation_created",
         appointment_id: a.id,
-        actor_id: a.created_by,
+        actor_id: a.created_by || undefined,
         at: new Date().toISOString(),
       });
     }),
@@ -228,6 +239,62 @@ export const localStore: PortalStore = {
       });
       return true;
     }),
+  async deleteAppointment(id, actor, confirmation) {
+    const docs = await localTransaction((s) => {
+      if (!s.staff.some((v) => v.id === actor && v.status === "active"))
+        throw new Error("STAFF_REQUIRED");
+      const a = s.appointments.find((v) => v.id === id);
+      if (!a) return null;
+      if (a.patient_label !== confirmation)
+        throw new Error("CONFIRMATION_MISMATCH");
+      if (!a.deletion_requested_at)
+        s.audit.push({
+          event: "patient_card_deletion_requested",
+          actor_id: actor,
+          appointment_id: id,
+          at: new Date().toISOString(),
+        });
+      a.deletion_requested_at ||= new Date().toISOString();
+      a.revoked_at ||= a.deletion_requested_at;
+      s.sessions = s.sessions.filter((v) => v.appointment_id !== id);
+      s.analyses = s.analyses.filter((v) => v.appointment_id !== id);
+      s.presentations = s.presentations.filter((v) => v.appointment_id !== id);
+      return s.documents.filter((v) => v.appointment_id === id);
+    });
+    if (!docs) return false;
+    try {
+      for (const d of docs) {
+        const file = path.resolve(
+          /* turbopackIgnore: true */ root(),
+          d.storage_path,
+        );
+        if (!file.startsWith(root() + path.sep))
+          throw new Error("UNSAFE_STORAGE_PATH");
+        try {
+          await unlink(/* turbopackIgnore: true */ file);
+        } catch (e) {
+          if ((e as NodeJS.ErrnoException).code !== "ENOENT") throw e;
+        }
+      }
+    } catch {
+      throw new PortalError(
+        503,
+        "DELETION_PENDING",
+        "המחיקה לא הושלמה. התיק חסום לגישה; אפשר לנסות שוב כדי להשלים את הסרת הקבצים.",
+      );
+    }
+    return localTransaction((s) => {
+      s.appointments = s.appointments.filter((v) => v.id !== id);
+      s.documents = s.documents.filter((v) => v.appointment_id !== id);
+      s.audit.push({
+        event: "patient_card_deleted",
+        actor_id: actor,
+        appointment_id: id,
+        at: new Date().toISOString(),
+      });
+      return true;
+    });
+  },
   revoke: (id) =>
     localTransaction((s) => {
       const a = s.appointments.find((a) => a.id === id);
