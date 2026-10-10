@@ -117,6 +117,9 @@ export function authStore() {
             if (a.created_by === id) a.created_by = null;
           for (const a of s.analyses)
             if (a.reviewed_by === id) a.reviewed_by = null;
+          for (const r of s.evidenceReviews) {
+            if (r.created_by === id) r.created_by = null;
+          }
           for (const a of s.presentations) {
             if (a.created_by === id) a.created_by = null;
             if (a.reviewed_by === id) a.reviewed_by = null;

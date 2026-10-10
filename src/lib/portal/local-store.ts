@@ -15,7 +15,9 @@ import type {
   PortalSession,
   AuditEvent,
 } from "./types";
+import type { EvidenceRecord } from "@/lib/evidence/types";
 type State = {
+  evidenceReviews: EvidenceRecord[];
   analyses: AnalysisRecord[];
   presentations: PresentationRecord[];
   staff: Staff[];
@@ -47,6 +49,7 @@ export async function localTransaction<T>(
         "state.json",
       );
       let state: State = {
+        evidenceReviews: [],
         analyses: [],
         presentations: [],
         staff: [owner],
@@ -63,6 +66,7 @@ export async function localTransaction<T>(
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+      state.evidenceReviews ??= [];
       state.analyses ??= [];
       state.presentations ??= [];
       state.staff ??= [owner];
@@ -257,6 +261,9 @@ export const localStore: PortalStore = {
       a.deletion_requested_at ||= new Date().toISOString();
       a.revoked_at ||= a.deletion_requested_at;
       s.sessions = s.sessions.filter((v) => v.appointment_id !== id);
+      s.evidenceReviews = s.evidenceReviews.filter(
+        (v) => v.appointment_id !== id,
+      );
       s.analyses = s.analyses.filter((v) => v.appointment_id !== id);
       s.presentations = s.presentations.filter((v) => v.appointment_id !== id);
       return s.documents.filter((v) => v.appointment_id === id);

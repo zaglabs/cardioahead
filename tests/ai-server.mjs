@@ -50,6 +50,130 @@ http
         ? payload.messages[0].content
         : payload.input[0].content,
       docs = [];
+
+    let evidenceTask = null;
+    try {
+      evidenceTask = JSON.parse(inputs[0]?.text || "");
+    } catch {}
+    if (
+      evidenceTask?.task === "evidence_draft" ||
+      evidenceTask?.task === "evidence_verify"
+    ) {
+      const result =
+        evidenceTask.task === "evidence_verify"
+          ? {
+              patient_results: evidenceTask.patient.map((f) => ({
+                index: f.id,
+                supported: true,
+              })),
+              results: evidenceTask.claims.map(({ index, claim }) => ({
+                index,
+                supported: !claim.text.en.includes(
+                  "unsupported interpretation",
+                ),
+              })),
+            }
+          : (() => {
+              const p = evidenceTask,
+                source = p.literature.find((s) => s.access !== "metadata_only");
+              if (!source) return { claims: [] };
+              const refs = [
+                {
+                  source_id: source.id,
+                  quote: source.text.split("\n")[0].slice(0, 440),
+                },
+              ];
+              const base = {
+                section: "options",
+                stance: "context",
+                title: bi("Assess patient applicability", "הערכת התאמה למטופל"),
+                text: bi(
+                  "For clinician consideration: assess symptoms, renal function, potassium and contraindications before judging applicability.",
+                  "לעיון הרופא: יש לברר תסמינים, תפקוד כליות, אשלגן והתוויות נגד לפני הערכת ההתאמה.",
+                ),
+                patient_fact_ids: [p.patient[0].id],
+                refs,
+                recommendation_class: "",
+                evidence_level: "",
+              };
+              const claims = [base];
+              if (source.evidence_type === "guideline")
+                claims.push({
+                  ...base,
+                  section: "guidelines",
+                  title: bi(
+                    "Available guideline evidence",
+                    "ראיות הנחיה זמינות",
+                  ),
+                });
+              const report = p.literature.find(
+                (s) => s.evidence_type === "case_report_or_series",
+              );
+              if (report)
+                claims.push({
+                  ...base,
+                  section: "cases",
+                  title: bi(
+                    "Limited case-report evidence",
+                    "ראיות מוגבלות מתיאור מקרה",
+                  ),
+                  text: bi(
+                    "This single fictional case reported symptom improvement after evaluation; it cannot establish comparative effectiveness or predict this patient's outcome.",
+                    "במקרה הפיקטיבי היחיד דווח על שיפור בתסמינים לאחר בירור; אין להסיק יעילות השוואתית או לחזות תוצאה למטופל זה.",
+                  ),
+                  refs: [
+                    { source_id: report.id, quote: report.text.slice(0, 440) },
+                  ],
+                });
+              if (p.question_kind === "plan")
+                for (const stance of ["support", "concern", "alternative"])
+                  claims.push({ ...base, section: "proposed_plan", stance });
+              if (p.question.includes("unsupported")) {
+                claims.push({
+                  ...base,
+                  refs: [{ source_id: "PMID:99999999", quote: refs[0].quote }],
+                });
+                claims.push({
+                  ...base,
+                  text: bi(
+                    "An unsupported interpretation predicts a different EF.",
+                    "פרשנות ללא תמיכה חוזה EF שונה.",
+                  ),
+                });
+              }
+              return { claims };
+            })();
+      calls.push({
+        task: evidenceTask.task,
+        ids: evidenceTask.patient.flatMap((f) =>
+          f.fact.refs.map((r) => r.document_id),
+        ),
+        provider: claude ? "claude" : "openai",
+        model: payload.model,
+      });
+      res.end(
+        JSON.stringify(
+          claude
+            ? {
+                stop_reason: "end_turn",
+                content: [{ type: "text", text: JSON.stringify(result) }],
+              }
+            : {
+                status: "completed",
+                output: [
+                  {
+                    type: "message",
+                    content: [
+                      { type: "output_text", text: JSON.stringify(result) },
+                    ],
+                  },
+                ],
+              },
+        ),
+      );
+      return;
+    }
+
     for (let i = 0; i < inputs.length; i += 2) {
       const metadata = JSON.parse(
         inputs[i].text.slice(inputs[i].text.indexOf("{")),
@@ -169,9 +293,15 @@ http
     };
     if (claude) {
       // Exercise the actual non-nullable Claude wire format.
-      const wire = JSON.parse(JSON.stringify(summary, (key, value) =>
-        value === null && key === "date" ? "" :
-        value === null && key === "key_value" ? {he:"",en:""} : value));
+      const wire = JSON.parse(
+        JSON.stringify(summary, (key, value) =>
+          value === null && key === "date"
+            ? ""
+            : value === null && key === "key_value"
+              ? { he: "", en: "" }
+              : value,
+        ),
+      );
       res.end(
         JSON.stringify({
           id: randomUUID(),

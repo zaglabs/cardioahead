@@ -3,6 +3,7 @@ import { useLanguage } from "@/components/language-provider";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { EvidenceReview } from "./evidence-review";
 import { ClinicalInsights } from "./clinical-insights";
 import {
   DocumentPreviewProvider,
@@ -30,6 +31,7 @@ import {
   Pencil,
   ChevronDown,
   Users,
+  BookOpen,
 } from "lucide-react";
 import type { AppointmentView, Staff } from "@/lib/portal/types";
 const labels = {
@@ -67,9 +69,9 @@ function ClinicWorkspace({
   );
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
-  const [tab, setTab] = useState<"documents" | "report" | "presentation">(
-    "documents",
-  );
+  const [tab, setTab] = useState<
+    "documents" | "report" | "presentation" | "evidence"
+  >("documents");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(t("מטופל בדיקה 001"));
   const [date, setDate] = useState("");
@@ -641,7 +643,12 @@ function ClinicWorkspace({
                   <span className="badge">{statusLabel(active)}</span>
                 </div>
                 <div
-                  className="detail-tabs"
+                  className={
+                    "detail-tabs" +
+                    (staff.role === "admin" || staff.role === "professor"
+                      ? " has-evidence"
+                      : "")
+                  }
                   role="tablist"
                   aria-label={t("תוכן תיק הביקור")}
                 >
@@ -673,6 +680,17 @@ function ClinicWorkspace({
                     <Heart size={15} />
                     {t("הסבר חזותי")}
                   </button>
+                  {(staff.role === "admin" || staff.role === "professor") && (
+                    <button
+                      role="tab"
+                      aria-selected={tab === "evidence"}
+                      onClick={() => setTab("evidence")}
+                      className={tab === "evidence" ? "active" : ""}
+                    >
+                      <BookOpen size={15} />
+                      {t("ראיות קליניות ואפשרויות טיפול")}
+                    </button>
+                  )}
                 </div>
                 <div className="report-panel">
                   {active.deletion_requested_at ? (
@@ -737,6 +755,8 @@ function ClinicWorkspace({
                           </div>
                         )}
                     </>
+                  ) : tab === "evidence" ? (
+                    <EvidenceReview key={active.id} appointment={active} />
                   ) : (
                     <ClinicalInsights
                       key={active.id}

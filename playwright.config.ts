@@ -2,6 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 import path from "node:path";
 const localEnv = {
   CARDIOAHEAD_LOCAL_TEST: "true",
+  CARDIOAHEAD_TEST_LITERATURE_URL: "http://127.0.0.1:3197",
   OPENAI_API_KEY: "local-ai-test-key",
   CARDIOAHEAD_AI_PROVIDER: "openai",
   CARDIOAHEAD_ENABLE_OPENAI_TEST_PDFS: "true",
@@ -34,6 +35,11 @@ export default defineConfig({
     },
   ],
   webServer: [
+    {
+      command: "node tests/literature-server.mjs",
+      url: "http://127.0.0.1:3197/calls",
+      reuseExistingServer: false,
+    },
     {
       command: "npm run start -- --port 3120",
       url: "http://127.0.0.1:3120",

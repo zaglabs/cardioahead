@@ -36,6 +36,7 @@ function url(provider: AIProvider) {
 export async function requestClinicalSummary(
   instructions: string,
   content: Record<string, unknown>[],
+  timeoutMs = 160000,
 ) {
   if (!providerConfigured()) throw new Error("AI_NOT_CONFIGURED");
   const provider = selectedProvider();
@@ -100,7 +101,7 @@ export async function requestClinicalSummary(
     method: "POST",
     headers,
     body: JSON.stringify(body),
-    signal: AbortSignal.timeout(160000),
+    signal: AbortSignal.timeout(timeoutMs),
     cache: "no-store",
     redirect: "error",
   });
@@ -141,4 +142,101 @@ export async function requestClinicalSummary(
     value: provider === "claude" ? normalizeClaudeSummary(value) : value,
     model,
   };
+}
+
+export async function requestEvidenceJSON(
+  name: string,
+  instructions: string,
+  payload: unknown,
+  schema: Record<string, unknown>,
+  documents: Record<string, unknown>[] = [],
+  timeoutMs = 75000,
+) {
+  if (!providerConfigured()) throw new Error("AI_NOT_CONFIGURED");
+  const provider = selectedProvider(),
+    model =
+      provider === "claude"
+        ? process.env.CLAUDE_MODEL || "claude-sonnet-4-6"
+        : process.env.OPENAI_MODEL || "gpt-5.4";
+  const content = [
+    { type: "input_text", text: JSON.stringify(payload) },
+    ...documents,
+  ];
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  let requestBody: unknown;
+  if (provider === "claude") {
+    headers["x-api-key"] = process.env.ANTHROPIC_API_KEY!;
+    headers["anthropic-version"] = "2023-06-01";
+    requestBody = {
+      model,
+      max_tokens: 10000,
+      system: instructions,
+      messages: [
+        {
+          role: "user",
+          content: content.map((item) =>
+            item.type === "input_file"
+              ? {
+                  type: "document",
+                  source: {
+                    type: "base64",
+                    media_type: "application/pdf",
+                    data: String(item.file_data).split(",")[1],
+                  },
+                }
+              : { type: "text", text: item.text },
+          ),
+        },
+      ],
+      output_config: { format: { type: "json_schema", schema } },
+    };
+  } else {
+    headers.Authorization = "Bearer " + process.env.OPENAI_API_KEY!;
+    requestBody = {
+      model,
+      store: false,
+      instructions,
+      input: [{ role: "user", content }],
+      max_output_tokens: 10000,
+      text: { format: { type: "json_schema", name, strict: true, schema } },
+    };
+  }
+  const response = await fetch(url(provider), {
+    method: "POST",
+    headers,
+    body: JSON.stringify(requestBody),
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(timeoutMs),
+  });
+  if (!response.ok)
+    throw new Error(
+      classifyProviderFailure(
+        response.status,
+        await response.json().catch(() => null),
+      ),
+    );
+  const result = await response.json();
+  if (
+    provider === "claude"
+      ? result.stop_reason !== "end_turn"
+      : result.status !== "completed"
+  )
+    throw new Error("AI_INCOMPLETE");
+  const blocks =
+    provider === "claude"
+      ? result.content
+      : result.output?.flatMap((o: { type: string; content?: unknown[] }) =>
+          o.type === "message" ? o.content || [] : [],
+        );
+  if (!Array.isArray(blocks)) throw new Error("AI_INCOMPLETE");
+  const output = blocks
+    .filter(
+      (c: { type: string }) => c.type === "text" || c.type === "output_text",
+    )
+    .map((c: { text: string }) => c.text)
+    .join("");
+  return { value: JSON.parse(output), model };
 }
