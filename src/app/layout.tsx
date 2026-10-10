@@ -4,6 +4,7 @@ import { LanguageProvider } from "@/components/language-provider";
 import "./globals.css";
 import "./workspace.css";
 import "./evidence.css";
+import "./visit.css";
 import { MobileViewport } from "@/components/mobile-viewport";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslations();

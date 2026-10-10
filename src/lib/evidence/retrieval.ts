@@ -87,8 +87,7 @@ function entrySource(e: Entry, topics: string[]): LiteratureSource | null {
     )
   )
     return null;
-  const date =
-    e.firstPublicationDate || e.pubYear || "";
+  const date = e.firstPublicationDate || e.pubYear || "";
   if (date && date.slice(0, 10) > new Date().toISOString().slice(0, 10))
     return null;
   const originalGuideline =
@@ -156,11 +155,19 @@ function entrySource(e: Entry, topics: string[]): LiteratureSource | null {
       (date ? Number(date.slice(0, 4)) - 2000 : 0) / 10,
   };
 }
-export async function retrieveLiterature(topics: string[]): Promise<Retrieval> {
+export async function retrieveLiterature(
+  topics: string[],
+  focus?: "lifestyle",
+): Promise<Retrieval> {
   const sources = new Map<string, { source: LiteratureSource; entry: Entry }>(),
     searches: SearchRun[] = [],
     limitations: string[] = [];
-  const queries = buildQueries(topics),
+  const queries = buildQueries(topics).map((q, i) =>
+      focus === "lifestyle" && i >= 2
+        ? q +
+          ' AND (exercise OR "physical activity" OR "cardiac rehabilitation" OR nutrition OR "Mediterranean diet" OR sleep OR "smoking cessation" OR alcohol OR prevention)'
+        : q,
+    ),
     deadline = AbortSignal.timeout(45000);
   for (const query of queries) {
     const run: SearchRun = {

@@ -1,0 +1,553 @@
+.visit-workspace {
+  min-width: 0;
+}
+.visit-purpose {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #f4f7f0;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+.visit-purpose p {
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1.75;
+}
+.visit-purpose svg {
+  margin-top: 3px;
+  color: #6e885d;
+}
+.visit-message {
+  border: 1px solid #cbdcc1;
+  background: #edf4e8;
+  border-radius: 10px;
+  padding: 12px 16px;
+  color: var(--ink);
+  margin-block: 14px;
+  font-size: 1rem;
+}
+.visit-toolbar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-block: 16px;
+}
+.visit-toolbar label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-inline-start: auto;
+  font-size: 0.9rem;
+}
+.visit-workspace input:not([type="checkbox"]),
+.visit-workspace textarea,
+.visit-workspace select {
+  font: inherit;
+  font-size: 1rem;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  padding: 10px 12px;
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+  min-height: 46px;
+}
+.visit-toolbar select {
+  width: auto;
+  min-width: 110px;
+}
+.visit-workspace textarea {
+  resize: vertical;
+  line-height: 1.75;
+}
+.visit-workspace label {
+  font-size: 1rem;
+  color: var(--text);
+}
+.visit-history {
+  display: grid;
+  gap: 8px;
+  margin-block: 18px;
+}
+.visit-history select {
+  font-size: 0.9rem;
+}
+.visit-findings,
+.report-field,
+.report-delivery-history {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0 16px;
+  margin-block: 16px;
+  background: #fff;
+}
+.visit-findings > summary,
+.report-field > summary,
+.report-delivery-history > summary {
+  padding-block: 16px;
+  font-size: 1rem;
+  line-height: 1.65;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+}
+.visit-findings[open] > summary,
+.report-field[open] > summary {
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 16px;
+}
+.visit-findings > label {
+  display: grid;
+  gap: 8px;
+  margin-block: 16px;
+}
+.visit-findings > .button {
+  margin-block: 18px;
+}
+.visit-findings > .form-note {
+  font-size: 0.95rem;
+}
+.visit-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-block: 18px;
+}
+.visit-actions .button {
+  white-space: normal;
+}
+.visit-generation {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  margin-top: 26px;
+}
+.visit-generation p {
+  margin-top: 12px;
+  font-size: 0.9rem;
+  line-height: 1.7;
+}
+.visit-empty,
+.visit-processing {
+  text-align: center;
+  padding: 30px 12px;
+}
+.visit-empty h3,
+.visit-processing h3 {
+  font-size: 1.5rem;
+  margin-block: 14px;
+}
+.visit-empty p,
+.visit-processing p {
+  font-size: 1rem;
+  line-height: 1.8;
+}
+.draft-candidate {
+  border: 1px solid #ccdcbf;
+  background: #f0f5e9;
+  border-radius: 12px;
+  padding: 16px;
+  margin-block: 16px;
+}
+.draft-candidate p {
+  font-size: 1rem;
+  margin-bottom: 12px;
+}
+.lifestyle-editor {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  padding: 18px;
+  margin-block: 18px;
+}
+.lifestyle-editor-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.lifestyle-editor > label {
+  display: grid;
+  gap: 8px;
+  margin-block: 14px;
+}
+.recommendation-select {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  line-height: 1.5;
+}
+.recommendation-select input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--ink);
+}
+.lifestyle-reasoning {
+  border-top: 1px solid var(--line);
+  margin-top: 20px;
+  padding-top: 15px;
+}
+.lifestyle-reasoning > summary {
+  font-size: 0.95rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+.lifestyle-reasoning p {
+  font-size: 0.95rem;
+  line-height: 1.8;
+  margin-top: 14px;
+}
+.lifestyle-reasoning .clinical-fact {
+  padding-block: 10px;
+}
+.lifestyle-reasoning .source-evidence {
+  margin-top: 12px;
+}
+.lifestyle-reasoning blockquote {
+  border-inline-start: 2px solid #b7cda6;
+  background: #f5f8f0;
+  padding: 12px;
+  margin: 12px 0;
+  font-size: 0.95rem;
+}
+.lifestyle-reasoning a {
+  text-decoration: underline;
+}
+.patient-report-editor {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+  padding: 18px;
+  margin-top: 20px;
+}
+.patient-report-editor > h3,
+.report-review-controls > h3 {
+  font-size: 1.45rem;
+  margin-bottom: 18px;
+}
+.report-profile-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.report-profile-grid label {
+  display: grid;
+  gap: 7px;
+}
+.report-field textarea {
+  margin-bottom: 16px;
+}
+.copied-lifestyle {
+  border: 1px solid #d5e1cb;
+  border-radius: 10px;
+  padding: 14px;
+  background: #f5f8f0;
+  margin-block: 16px;
+}
+.copied-lifestyle > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.copied-lifestyle h4 {
+  font-size: 1rem;
+}
+.copied-lifestyle input,
+.copied-lifestyle textarea {
+  margin-top: 12px;
+}
+.report-steps-editor {
+  margin-block: 22px;
+}
+.report-steps-editor h4 {
+  font-size: 1.2rem;
+  margin-bottom: 14px;
+}
+.report-steps-editor > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-block: 12px;
+}
+.report-review-controls {
+  border: 1px solid var(--line);
+  background: #f5f8f0;
+  border-radius: 14px;
+  padding: 18px;
+  margin-top: 24px;
+}
+.report-review-controls > label {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.report-review-controls > .button {
+  margin-block: 16px;
+}
+.approved-version {
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+  margin-top: 16px;
+}
+.approved-version p {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+.approved-version > .button {
+  margin-top: 14px;
+}
+.report-delivery-history article {
+  border-top: 1px solid var(--line);
+  padding-block: 18px;
+}
+.report-delivery-history p {
+  font-size: 0.9rem;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+.report-delivery-history .text-button {
+  font-size: 0.9rem;
+  min-height: 44px;
+}
+.visit-patient-report {
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: clamp(22px, 4vw, 48px);
+  max-width: 860px;
+  width: 100%;
+  margin-inline: auto;
+  color: var(--ink);
+}
+.visit-patient-report header {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 24px;
+  margin-bottom: 28px;
+}
+.report-brand {
+  display: block;
+  color: var(--ink);
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 24px;
+}
+.visit-patient-report h1 {
+  font-size: clamp(2rem, 4vw, 2.7rem);
+  margin-bottom: 24px;
+}
+.visit-patient-report dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  margin: 0 0 18px;
+}
+.visit-patient-report dt {
+  font-size: 0.95rem;
+  color: var(--muted);
+}
+.visit-patient-report dd {
+  margin: 3px 0 0;
+  font-size: 1.125rem;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.visit-patient-report > section {
+  margin-top: 26px;
+}
+.visit-patient-report h2 {
+  font-size: 1.4rem;
+  line-height: 1.5;
+  margin-bottom: 12px;
+  letter-spacing: -0.02em;
+}
+.visit-patient-report p,
+.visit-patient-report li {
+  font-size: 1.125rem;
+  line-height: 1.95;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--text);
+}
+.visit-patient-report .report-next-steps {
+  border-radius: 12px;
+  padding: 20px;
+  background: #eef4e6;
+  margin-top: 30px;
+}
+.report-next-steps ol {
+  padding-inline-start: 22px;
+  margin-bottom: 0;
+}
+.report-next-steps li {
+  margin-block: 10px;
+}
+.visit-patient-report footer {
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  margin-top: 28px;
+}
+.patient-view-dialog {
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  width: min(970px, calc(100% - 28px));
+  max-height: 92dvh;
+  background: #f5f7f1;
+  color: var(--ink);
+  overflow: auto;
+}
+.patient-view-dialog::backdrop {
+  background: #122f2a99;
+}
+.patient-view-toolbar {
+  position: sticky;
+  top: 0;
+  background: #f5f7f1;
+  border-bottom: 1px solid var(--line);
+  padding: 14px 22px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 1;
+}
+.patient-view-toolbar h2 {
+  font-size: 1.3rem;
+}
+.preview-draft-note {
+  padding: 18px 24px;
+  font-size: 0.95rem;
+}
+.patient-view-dialog .visit-patient-report {
+  border-radius: 0;
+  max-width: 100%;
+  border-inline: 0;
+}
+.patient-preview-approval {
+  padding: 24px;
+  display: grid;
+  gap: 16px;
+}
+.patient-preview-approval .consent-check {
+  align-items: flex-start;
+  font-size: 1rem;
+  line-height: 1.8;
+}
+.patient-preview-approval input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+body:has(.patient-view-dialog[open]) {
+  overflow: hidden;
+}
+.secure-report {
+  max-width: 920px;
+  margin: 18px auto 48px;
+}
+.secure-report-actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+.report-access-panel {
+  max-width: 580px;
+  margin: 40px auto;
+  display: grid;
+  gap: 24px;
+}
+.report-access-panel h1 {
+  font-size: 2rem;
+}
+.report-access-panel p {
+  font-size: 1.125rem;
+  line-height: 1.9;
+}
+.report-access-panel .portal-form {
+  margin: 0;
+}
+.detail-tabs.has-visit {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0 10px;
+  overflow: visible;
+}
+.detail-tabs.has-visit button {
+  white-space: normal;
+  line-height: 1.5;
+  text-align: center;
+  justify-content: center;
+  min-height: 76px;
+  font-size: 0.9rem;
+  flex-direction: column;
+}
+@media (max-width: 520px) {
+  .detail-tabs.has-visit {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 8px;
+  }
+  .detail-tabs.has-visit button {
+    min-height: 74px;
+    flex-direction: row;
+    padding: 10px 6px;
+  }
+  .report-profile-grid,
+  .visit-patient-report dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .patient-report-editor,
+  .report-review-controls,
+  .lifestyle-editor {
+    padding: 14px;
+  }
+  .visit-actions {
+    gap: 10px;
+  }
+  .visit-actions > .button,
+  .report-review-controls > .button,
+  .approved-version > .button,
+  .visit-generation > .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .visit-toolbar {
+    gap: 8px;
+  }
+  .visit-toolbar label {
+    margin: 0;
+    flex: 1;
+    justify-content: flex-end;
+  }
+  .visit-patient-report {
+    padding: 24px 20px;
+  }
+  .patient-preview-approval {
+    padding: 20px 16px;
+  }
+  .patient-view-toolbar {
+    padding: 12px 16px;
+  }
+  .patient-view-toolbar h2 {
+    font-size: 1.15rem;
+  }
+  .secure-report-actions > .button {
+    width: 100%;
+    justify-content: center;
+  }
+  .report-access-panel {
+    padding: 26px 20px;
+    margin-top: 20px;
+  }
+}

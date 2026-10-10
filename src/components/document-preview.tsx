@@ -15,7 +15,7 @@ import type {
   PDFDocumentLoadingTask,
   RenderTask,
 } from "pdfjs-dist";
-type Target = { id: string; filename: string; page?: number };
+type Target = { id: string; filename: string; page?: number; url?: string };
 const PreviewContext = createContext<(target: Target) => void>(() => {});
 export const useDocumentPreview = () => useContext(PreviewContext);
 export function DocumentPreviewProvider({
@@ -40,7 +40,7 @@ export function DocumentPreviewProvider({
       {children}
       {target && (
         <DocumentPreview
-          key={target.id + ":" + target.page}
+          key={target.id + ":" + target.page + ":" + target.url}
           target={target}
           onClose={close}
         />
@@ -151,10 +151,13 @@ function DocumentPreview({
       try {
         const renderer = await import("pdfjs-dist/legacy/build/pdf.mjs");
         renderer.GlobalWorkerOptions.workerSrc = "/pdfjs/pdf.worker.min.mjs";
-        const response = await fetch("/api/clinic/documents/" + target.id, {
-          cache: "no-store",
-          signal: controller.signal,
-        });
+        const response = await fetch(
+          target.url || "/api/clinic/documents/" + target.id,
+          {
+            cache: "no-store",
+            signal: controller.signal,
+          },
+        );
         if (!response.ok) {
           const result = await response.json();
           throw new Error(result.message);
@@ -188,7 +191,7 @@ function DocumentPreview({
       if (url) URL.revokeObjectURL(url);
       void loading?.destroy();
     };
-  }, [target.id, target.page, t]);
+  }, [target.id, target.page, target.url, t]);
   return (
     <dialog
       className="document-lightbox"

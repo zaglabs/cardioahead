@@ -64,9 +64,9 @@ export function sameOrigin(request: Request) {
       "הבקשה לא אושרה. רעננו את העמוד ונסו שוב.",
     );
 }
-export async function body(request: Request) {
+export async function body(request: Request, maxBytes=8192) {
   const text = await request.text();
-  if (Buffer.byteLength(text) > 8192)
+  if (Buffer.byteLength(text) > maxBytes)
     throw new PortalError(413, "TOO_LARGE", "הבקשה גדולה מדי.");
   try {
     return JSON.parse(text) as Record<string, unknown>;

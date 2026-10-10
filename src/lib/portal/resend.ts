@@ -87,3 +87,75 @@ export async function sendLoginCode(
     );
   }
 }
+
+export async function sendStoredReportNotice(
+  payload: { from: string; to: string[]; subject: string; text: string },
+  deliveryId: string,
+) {
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL)
+    throw new PortalError(
+      503,
+      "REPORT_EMAIL_SETUP",
+      "יש לחבר את שירות הדוא״ל לפני שליחת דוח למטופל.",
+    );
+  let response: Response;
+  try {
+    response = await fetch(endpoint(), {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer " + process.env.RESEND_API_KEY,
+        "Content-Type": "application/json",
+        "Idempotency-Key": "patient-report-" + deliveryId,
+      },
+      body: JSON.stringify(payload),
+      signal: AbortSignal.timeout(10000),
+      cache: "no-store",
+      redirect: "error",
+    });
+  } catch {
+    throw new PortalError(
+      503,
+      "REPORT_EMAIL_UNCONFIRMED",
+      "שליחת ההודעה לא אושרה. האישור לגרסה זו נשמר; אפשר לנסות שוב באופן מבוקר.",
+    );
+  }
+  if (!response.ok)
+    throw new PortalError(
+      503,
+      "REPORT_EMAIL_REJECTED",
+      "שירות הדוא״ל לא קיבל את ההודעה.",
+    );
+  const result = await response.json().catch(() => null);
+  if (typeof result?.id !== "string")
+    throw new PortalError(
+      503,
+      "REPORT_EMAIL_UNCONFIRMED",
+      "לא ניתן לאמת את קבלת ההודעה בשירות הדוא״ל.",
+    );
+  return result.id as string;
+}
+export async function getReportEmailEvent(id: string) {
+  if (!/^[a-zA-Z0-9-]+$/.test(id)) throw new Error("INVALID_PROVIDER_ID");
+  const url = new URL(endpoint());
+  url.pathname = url.pathname.replace(/\/$/, "") + "/" + id;
+  const response = await fetch(url, {
+    headers: { Authorization: "Bearer " + process.env.RESEND_API_KEY },
+    cache: "no-store",
+    redirect: "error",
+    signal: AbortSignal.timeout(10000),
+  });
+  if (!response.ok)
+    throw new PortalError(
+      503,
+      "REPORT_STATUS_UNAVAILABLE",
+      "לא ניתן לבדוק כעת את מצב המסירה בשירות הדוא״ל.",
+    );
+  const value = await response.json();
+  if (typeof value.last_event !== "string")
+    throw new PortalError(
+      503,
+      "REPORT_STATUS_UNAVAILABLE",
+      "לא ניתן לבדוק כעת את מצב המסירה בשירות הדוא״ל.",
+    );
+  return value.last_event as string;
+}

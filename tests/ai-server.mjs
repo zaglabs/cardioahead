@@ -56,6 +56,125 @@ http
       evidenceTask = JSON.parse(inputs[0]?.text || "");
     } catch {}
     if (
+      [
+        "lifestyle_draft",
+        "lifestyle_verify",
+        "visit_summary_draft",
+        "visit_summary_verify",
+      ].includes(evidenceTask?.task)
+    ) {
+      const p = evidenceTask;
+      const fields = [
+        "reason",
+        "findings",
+        "assessment",
+        "plan",
+        "medications",
+        "referrals",
+        "follow_up",
+        "warning_signs",
+        "prevention",
+        "additional",
+      ];
+      let result;
+      if (p.task === "lifestyle_draft") {
+        const source = p.literature.find((s) => s.access !== "metadata_only");
+        result = {
+          sections: source
+            ? [
+                {
+                  kind: "activity",
+                  title: bi("Discuss suitable activity", "בירור פעילות מתאימה"),
+                  patient_text: bi(
+                    "Ask your clinician which activities are suitable before changing your routine.",
+                    "שאלו את הרופא אילו פעילויות מתאימות לכם לפני שינוי השגרה.",
+                  ),
+                  review_note: bi(
+                    "Eligibility and current activity habits are unknown; clinician clearance is required.",
+                    "ההתאמה והרגלי הפעילות הנוכחיים אינם ידועים; נדרש בירור עם הרופא.",
+                  ),
+                  requires_clearance: true,
+                  patient_fact_ids: [p.patient[0].id],
+                  refs: [
+                    {
+                      source_id: source.id,
+                      quote: source.text.split("\\n")[0].slice(0, 440),
+                    },
+                  ],
+                },
+              ]
+            : [],
+          limitations: [
+            bi(
+              "Current habits have not been documented.",
+              "הרגלים נוכחיים לא תועדו.",
+            ),
+          ],
+        };
+      } else if (p.task === "lifestyle_verify") {
+        result = {
+          supported_section_ids: p.sections.map((s) => s.id),
+          supported_patient_ids: p.patient.map((f) => f.id),
+        };
+      } else if (p.task === "visit_summary_draft") {
+        result = {
+          fields: Object.fromEntries(
+            fields.map((k) => [
+              k,
+              p.clinician_findings?.fields[k]?.en ||
+              p.clinician_findings?.fields[k]?.he
+                ? p.clinician_findings.fields[k]
+                : bi("Invented examination occurred.", "בוצעה בדיקה מומצאת."),
+            ]),
+          ),
+          next_steps: [
+            bi(
+              "Contact the clinic to confirm follow-up arrangements.",
+              "פנו למרפאה לאישור סידורי המעקב.",
+            ),
+          ],
+        };
+        result.fields.reason =
+          p.clinician_findings?.fields.reason ||
+          bi("Records supplied for review.", "מסמכים שנמסרו לעיון.");
+        result.fields.medications = bi(
+          "Altered medication instructions.",
+          "הוראות תרופות ששונו.",
+        );
+      } else
+        result = {
+          supported_fields: fields,
+          supported_steps: p.next_steps.map((_, i) => i),
+        };
+      calls.push({
+        task: p.task,
+        provider: claude ? "claude" : "openai",
+        ids: p.patient.flatMap((f) => f.fact.refs.map((r) => r.document_id)),
+      });
+      res.end(
+        JSON.stringify(
+          claude
+            ? {
+                stop_reason: "end_turn",
+                content: [{ type: "text", text: JSON.stringify(result) }],
+              }
+            : {
+                status: "completed",
+                output: [
+                  {
+                    type: "message",
+                    content: [
+                      { type: "output_text", text: JSON.stringify(result) },
+                    ],
+                  },
+                ],
+              },
+        ),
+      );
+      return;
+    }
+
+    if (
       evidenceTask?.task === "evidence_draft" ||
       evidenceTask?.task === "evidence_verify"
     ) {

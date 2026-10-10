@@ -1,5 +1,6 @@
 import clinical from "./clinical.en.json";
 import evidence from "./evidence.en.json";
+import visit from "./visit.en.json";
 import common from "./common.en.json";
 import publicPages from "./public.en.json";
 import patient from "./patient.en.json";
@@ -13,6 +14,7 @@ export const english: Record<string, string> = {
   ...clinic,
   ...clinical,
   ...evidence,
+  ...visit,
 };
 const hebrew = Object.fromEntries(
   Object.entries(english).map(([he, en]) => [en, he]),

@@ -18,7 +18,9 @@ The complete two-browser flow is tested locally against durable private test sto
 The local backend is always disabled on Vercel.
 
 Source-cited AI drafts and clinician-requested saved presentations are implemented.
-Prof. Maor's exact report template, email notifications and real-data launch controls remain next.
+Clinician-edited lifestyle drafts and visit summaries now support exact-version approval, secure email notifications and verified patient PDF access.
+See [visit report workflow](docs/visit-reports.md).
+Prof. Maor's exact report template and real-data launch controls remain next.
 See [clinical processing and presentation setup](docs/clinical-analysis.md).
 
 **galadv73@gmail.com** is the sole protected administrator. Verified staff wait for owner approval.
@@ -40,6 +42,7 @@ forms, sign-in verification and uploaded documents intact.
 - `/admin`: six-digit Resend email login and clinic appointment inbox
 - `/admin/users`: sole-owner staff approval and user management
 - `/invite/[token]`: code verification, PDF selection/upload, confirmation and submission
+- `/report/[token]`: email verification and the frozen clinician-approved report/PDF
 - `/test-documents`: three fictional Hebrew PDFs and testing instructions
 - `/privacy`: current test-stage data handling
 - Old `/demo/clinic` redirects to `/admin`; old `/demo/patient` redirects home.
@@ -47,7 +50,7 @@ forms, sign-in verification and uploaded documents intact.
 ## Setup and hosting
 
 See [private storage and account setup](docs/storage-setup.md).
-Run the first two SQL migrations for sign-in/storage and the clinical-records migration for AI drafts in a dedicated Supabase project, verify a sending domain in Resend,
+Run the migrations in order through 008 for sign-in/storage, clinical records, evidence and visit-report delivery in a dedicated Supabase project, verify a sending domain in Resend,
 and add server-only service keys and a random secret to Vercel. Do not paste credentials into
 source code or commit environment files.
 

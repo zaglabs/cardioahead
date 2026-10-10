@@ -3,6 +3,7 @@ import { useLanguage } from "@/components/language-provider";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { VisitWorkspace } from "./visit-workspace";
 import { EvidenceReview } from "./evidence-review";
 import { ClinicalInsights } from "./clinical-insights";
 import {
@@ -70,7 +71,7 @@ function ClinicWorkspace({
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState("all");
   const [tab, setTab] = useState<
-    "documents" | "report" | "presentation" | "evidence"
+    "documents" | "report" | "presentation" | "evidence" | "lifestyle" | "visit"
   >("documents");
   const [showForm, setShowForm] = useState(false);
   const [name, setName] = useState(t("מטופל בדיקה 001"));
@@ -644,7 +645,7 @@ function ClinicWorkspace({
                 </div>
                 <div
                   className={
-                    "detail-tabs" +
+                    "detail-tabs has-visit" +
                     (staff.role === "admin" || staff.role === "professor"
                       ? " has-evidence"
                       : "")
@@ -691,6 +692,24 @@ function ClinicWorkspace({
                       {t("ראיות קליניות ואפשרויות טיפול")}
                     </button>
                   )}
+                  <button
+                    role="tab"
+                    aria-selected={tab === "lifestyle"}
+                    onClick={() => setTab("lifestyle")}
+                    className={tab === "lifestyle" ? "active" : ""}
+                  >
+                    <Heart size={15} />
+                    {t("מניעה ואורח חיים")}
+                  </button>
+                  <button
+                    role="tab"
+                    aria-selected={tab === "visit"}
+                    onClick={() => setTab("visit")}
+                    className={tab === "visit" ? "active" : ""}
+                  >
+                    <FileText size={15} />
+                    {t("סיכום הביקור")}
+                  </button>
                 </div>
                 <div className="report-panel">
                   {active.deletion_requested_at ? (
@@ -755,6 +774,13 @@ function ClinicWorkspace({
                           </div>
                         )}
                     </>
+                  ) : tab === "lifestyle" || tab === "visit" ? (
+                    <VisitWorkspace
+                      key={active.id + ":" + tab}
+                      appointment={active}
+                      staff={staff}
+                      mode={tab}
+                    />
                   ) : tab === "evidence" ? (
                     <EvidenceReview key={active.id} appointment={active} />
                   ) : (

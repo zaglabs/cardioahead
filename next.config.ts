@@ -3,13 +3,16 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
   outputFileTracingRoot: process.cwd(),
+  outputFileTracingIncludes: { "/api/**": ["./public/fonts/*.ttf"] },
   async redirects() {
-    return [{
-      source: "/:path*",
-      has: [{ type: "host", value: "cardioahead.vercel.app" }],
-      destination: "https://www.cardioahead.com/:path*",
-      permanent: true,
-    }];
+    return [
+      {
+        source: "/:path*",
+        has: [{ type: "host", value: "cardioahead.vercel.app" }],
+        destination: "https://www.cardioahead.com/:path*",
+        permanent: true,
+      },
+    ];
   },
   async headers() {
     return [

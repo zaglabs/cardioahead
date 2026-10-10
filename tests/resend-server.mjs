@@ -1,6 +1,7 @@
 import http from "node:http";
 import { randomUUID } from "node:crypto";
 const mail = [];
+const failures = new Set();
 http
   .createServer(async (req, res) => {
     res.setHeader("Content-Type", "application/json");
@@ -16,6 +17,16 @@ http
         ),
       );
     }
+    if (req.method === "GET" && url.pathname.startsWith("/emails/")) {
+      const message = mail.find((m) => m.id === url.pathname.split("/").at(-1));
+      if (!message) {
+        res.statusCode = 404;
+        return res.end("{}");
+      }
+      return res.end(
+        JSON.stringify({ id: message.id, last_event: "delivered" }),
+      );
+    }
     if (req.method === "POST" && url.pathname === "/emails") {
       let body = "";
       for await (const chunk of req) body += chunk;
@@ -27,6 +38,14 @@ http
         res.statusCode = 401;
         return res.end("{}");
       }
+      if (
+        message.to[0].startsWith("retry-once") &&
+        !failures.has(message.to[0])
+      ) {
+        failures.add(message.to[0]);
+        res.statusCode = 503;
+        return res.end("{}");
+      }
       if (message.to[0].startsWith("delivery-failure")) {
         res.statusCode = 503;
         return res.end("{}");
@@ -34,7 +53,20 @@ http
       const existing = mail.find(
         (m) => m.key === req.headers["idempotency-key"],
       );
-      if (existing) return res.end(JSON.stringify({ id: existing.id }));
+      if (existing) {
+        if (
+          JSON.stringify({
+            from: existing.from,
+            to: existing.to,
+            subject: existing.subject,
+            text: existing.text,
+          }) !== JSON.stringify(message)
+        ) {
+          res.statusCode = 409;
+          return res.end("{}");
+        }
+        return res.end(JSON.stringify({ id: existing.id }));
+      }
       const entry = {
         ...message,
         id: randomUUID(),

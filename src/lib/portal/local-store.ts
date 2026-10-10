@@ -16,7 +16,25 @@ import type {
   AuditEvent,
 } from "./types";
 import type { EvidenceRecord } from "@/lib/evidence/types";
+import type {
+  RecordVersion,
+  Approval,
+  Delivery,
+  DraftJob,
+  SendAttempt,
+  ReportChallenge,
+  ReportSession,
+  VisitWorkspace,
+} from "@/lib/visit/types";
 type State = {
+  recordVersions: RecordVersion[];
+  reportApprovals: Approval[];
+  reportDeliveries: Delivery[];
+  patientDraftJobs: DraftJob[];
+  reportAttempts: SendAttempt[];
+  reportChallenges: ReportChallenge[];
+  reportSessions: ReportSession[];
+  visitWorkspaces: VisitWorkspace[];
   evidenceReviews: EvidenceRecord[];
   analyses: AnalysisRecord[];
   presentations: PresentationRecord[];
@@ -49,6 +67,14 @@ export async function localTransaction<T>(
         "state.json",
       );
       let state: State = {
+        recordVersions: [],
+        reportApprovals: [],
+        reportDeliveries: [],
+        patientDraftJobs: [],
+        reportAttempts: [],
+        reportChallenges: [],
+        reportSessions: [],
+        visitWorkspaces: [],
         evidenceReviews: [],
         analyses: [],
         presentations: [],
@@ -66,6 +92,14 @@ export async function localTransaction<T>(
       } catch (error) {
         if ((error as NodeJS.ErrnoException).code !== "ENOENT") throw error;
       }
+      state.recordVersions ??= [];
+      state.reportApprovals ??= [];
+      state.reportDeliveries ??= [];
+      state.patientDraftJobs ??= [];
+      state.reportAttempts ??= [];
+      state.reportChallenges ??= [];
+      state.reportSessions ??= [];
+      state.visitWorkspaces ??= [];
       state.evidenceReviews ??= [];
       state.analyses ??= [];
       state.presentations ??= [];
@@ -261,6 +295,33 @@ export const localStore: PortalStore = {
       a.deletion_requested_at ||= new Date().toISOString();
       a.revoked_at ||= a.deletion_requested_at;
       s.sessions = s.sessions.filter((v) => v.appointment_id !== id);
+      const deliveryIds = s.reportDeliveries
+        .filter((d) => d.appointment_id === id)
+        .map((d) => d.id);
+      s.recordVersions = s.recordVersions.filter(
+        (v) => v.appointment_id !== id,
+      );
+      s.reportApprovals = s.reportApprovals.filter(
+        (v) => v.appointment_id !== id,
+      );
+      s.reportDeliveries = s.reportDeliveries.filter(
+        (v) => v.appointment_id !== id,
+      );
+      s.patientDraftJobs = s.patientDraftJobs.filter(
+        (v) => v.appointment_id !== id,
+      );
+      s.visitWorkspaces = s.visitWorkspaces.filter(
+        (v) => v.appointment_id !== id,
+      );
+      s.reportAttempts = s.reportAttempts.filter(
+        (v) => !deliveryIds.includes(v.delivery_id),
+      );
+      s.reportChallenges = s.reportChallenges.filter(
+        (v) => !deliveryIds.includes(v.delivery_id),
+      );
+      s.reportSessions = s.reportSessions.filter(
+        (v) => !deliveryIds.includes(v.delivery_id),
+      );
       s.evidenceReviews = s.evidenceReviews.filter(
         (v) => v.appointment_id !== id,
       );
