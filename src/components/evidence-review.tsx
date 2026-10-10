@@ -8,6 +8,7 @@ import {
   Search,
   ShieldCheck,
 } from "lucide-react";
+import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
 import { useLanguage } from "./language-provider";
 import { useDocumentPreview } from "./document-preview";
 import type { AppointmentView } from "@/lib/portal/types";
@@ -344,11 +345,31 @@ export function EvidenceReview({
             <div className="form-error" role="alert">
               <p>
                 {t(
-                  review.error_code === "TEST_DOCUMENT_ONLY"
-                    ? "שלב הבדיקה מאפשר רק את מסמכי הבדיקה הפיקטיביים."
-                    : "סקירת הראיות לא הושלמה. אפשר לנסות שוב; סקירות קודמות נשמרו.",
+                  (review.error_code &&
+                    AI_FAILURE_MESSAGES[review.error_code]) ||
+                    (review.error_code === "EVIDENCE_VERIFICATION_FAILED"
+                      ? "בדיקת התמיכה במקורות לא הושלמה. לא הוצגה סקירה לא מאומתת; אפשר לנסות שוב."
+                      : review.error_code === "JOB_EXPIRED"
+                        ? "זמן העיבוד הסתיים לפני שהסקירה הושלמה. אפשר לנסות שוב."
+                        : review.error_code === "INVALID_EVIDENCE_OUTPUT"
+                          ? "טיוטת סקירת הראיות לא עמדה במבנה הנדרש. אפשר לנסות שוב."
+                          : review.error_code === "TEST_DOCUMENT_ONLY"
+                            ? "שלב הבדיקה מאפשר רק את מסמכי הבדיקה הפיקטיביים."
+                            : "סקירת הראיות לא הושלמה. אפשר לנסות שוב; סקירות קודמות נשמרו."),
                 )}
               </p>
+              {review.error_code && (
+                <p className="form-note">
+                  <bdi>{review.error_code}</bdi>
+                </p>
+              )}
+              {review.error_code === "EVIDENCE_FAILED" && (
+                <p>
+                  {t(
+                    "בניסיון הישן לא נשמר פירוט הסיבה. ניסיון חוזר יציג אבחון מדויק יותר במקרה של כשל.",
+                  )}
+                </p>
+              )}
               <button
                 className="button button-outline"
                 disabled={busy}

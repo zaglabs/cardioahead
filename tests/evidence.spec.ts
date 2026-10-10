@@ -341,3 +341,54 @@ test("evidence stays inaccessible to patient sessions, secretaries, pending user
   await member.dispose();
   await patient.dispose();
 });
+
+test("evidence failures retain provider-specific diagnostics instead of a generic error", async ({
+  page,
+  playwright,
+}) => {
+  test.setTimeout(90000);
+  const mobile = test.info().project.name === "mobile",
+    origin = "http://127.0.0.1:" + (mobile ? 3120 : 3100),
+    auth = mobile ? "tmp/claude-owner-auth.json" : "tmp/owner-auth.json";
+  const owner = await playwright.request.newContext({
+    baseURL: origin,
+    storageState: auth,
+  });
+  await page
+    .context()
+    .addCookies(JSON.parse(fs.readFileSync(auth, "utf8")).cookies);
+  for (const [question, code] of [
+    ["provider-credits", "AI_CREDITS_REQUIRED"],
+    ["provider-malformed", "AI_INVALID_RESPONSE"],
+  ]) {
+    const label =
+      "Fictional diagnostic " + question + " " + test.info().project.name;
+    const { endpoint, headers } = await make(owner, origin, label);
+    const response = await owner.post(endpoint + "/evidence", {
+      headers,
+      data: { action: "generate", question },
+    });
+    expect(response.status()).toBe(202);
+    await expect
+      .poll(
+        async () =>
+          (await (await owner.get(endpoint + "/evidence")).json()).review
+            ?.status,
+        { timeout: 45000 },
+      )
+      .toBe("failed");
+    const result = await (await owner.get(endpoint + "/evidence")).json();
+    expect(result.review.error_code).toBe(code);
+    expect(result.review.retrieval).toBeTruthy();
+    await page.goto(origin + "/admin?lang=en");
+    await page.locator(".case-card").filter({ hasText: label }).click();
+    await page
+      .getByRole("tab", { name: "Clinical Evidence & Options", exact: true })
+      .click();
+    await expect(page.locator(".evidence-review .form-error[role=alert]")).toContainText(code);
+    await expect(page.locator(".evidence-review .form-error[role=alert]")).toContainText(
+      code === "AI_CREDITS_REQUIRED" ? "credits" : "unreadable",
+    );
+  }
+  await owner.dispose();
+});

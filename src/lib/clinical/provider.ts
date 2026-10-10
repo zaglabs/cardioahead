@@ -1,8 +1,15 @@
 import { claudeSummarySchema, normalizeClaudeSummary } from "./claude-schema";
-import { classifyProviderFailure } from "./errors";
+import { classifyProviderFailure, classifyTransportFailure } from "./errors";
 import "server-only";
 import { localTestMode } from "@/lib/portal/config";
 import { summarySchema } from "./schema";
+async function fetchProvider(endpoint: string, options: RequestInit) {
+  try {
+    return await fetch(endpoint, options);
+  } catch (error) {
+    throw new Error(classifyTransportFailure(error));
+  }
+}
 export type AIProvider = "openai" | "claude";
 export function selectedProvider(): AIProvider {
   const choice = process.env.CARDIOAHEAD_AI_PROVIDER;
@@ -97,7 +104,7 @@ export async function requestClinicalSummary(
       },
     };
   }
-  const response = await fetch(url(provider), {
+  const response = await fetchProvider(url(provider), {
     method: "POST",
     headers,
     body: JSON.stringify(body),
@@ -114,7 +121,9 @@ export async function requestClinicalSummary(
     );
     throw new Error(code);
   }
-  const result = await response.json();
+  const result = await response.json().catch(() => {
+    throw new Error("AI_INVALID_RESPONSE");
+  });
   let text: string;
   if (provider === "claude") {
     if (result.stop_reason !== "end_turn" || !Array.isArray(result.content))
@@ -203,7 +212,7 @@ export async function requestEvidenceJSON(
       text: { format: { type: "json_schema", name, strict: true, schema } },
     };
   }
-  const response = await fetch(url(provider), {
+  const response = await fetchProvider(url(provider), {
     method: "POST",
     headers,
     body: JSON.stringify(requestBody),
@@ -218,7 +227,9 @@ export async function requestEvidenceJSON(
         await response.json().catch(() => null),
       ),
     );
-  const result = await response.json();
+  const result = await response.json().catch(() => {
+    throw new Error("AI_INVALID_RESPONSE");
+  });
   if (
     provider === "claude"
       ? result.stop_reason !== "end_turn"
@@ -238,5 +249,11 @@ export async function requestEvidenceJSON(
     )
     .map((c: { text: string }) => c.text)
     .join("");
-  return { value: JSON.parse(output), model };
+  let value: unknown;
+  try {
+    value = JSON.parse(output);
+  } catch {
+    throw new Error("AI_INVALID_RESPONSE");
+  }
+  return { value, model };
 }

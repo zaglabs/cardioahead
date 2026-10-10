@@ -10,6 +10,9 @@ export const AI_FAILURE_MESSAGES: Record<string, string> = {
     "שירות ה-AI לא הצליח לקבל את קובצי הבדיקה. יש לבדוק את תקינות ה-PDF.",
   AI_RATE_LIMIT: "הבקשה חרגה ממגבלת הקצב של שירות ה-AI. המתינו ונסו שוב.",
   AI_TIMEOUT: "שירות ה-AI לא השלים את הבקשה בזמן. ניתן לנסות שוב.",
+  AI_CONNECTION_FAILED: "לא ניתן היה להתחבר לשירות ה-AI. אפשר לנסות שוב.",
+  AI_INVALID_RESPONSE:
+    "שירות ה-AI החזיר תשובה שלא ניתן לקרוא. הסקירה לא נשמרה כתוצאה תקינה; אפשר לנסות שוב.",
   AI_PROVIDER_ERROR:
     "שירות ה-AI דחה את הבקשה. בדיקת החיבור תעזור לזהות את הסיבה.",
   INVALID_AI_OUTPUT: "טיוטת ה-AI לא עמדה במבנה הנדרש. לא הוצג סיכום לא תקין.",
@@ -42,4 +45,11 @@ export function classifyProviderFailure(
     return "AI_REQUEST_FORMAT";
   if (/pdf|document|file/.test(message)) return "AI_DOCUMENT_REJECTED";
   return "AI_PROVIDER_ERROR";
+}
+
+export function classifyTransportFailure(error: unknown): string {
+  const e = error as { name?: string; cause?: { code?: string } } | null;
+  if (e?.name === "TimeoutError" || e?.name === "AbortError")
+    return "AI_TIMEOUT";
+  return "AI_CONNECTION_FAILED";
 }

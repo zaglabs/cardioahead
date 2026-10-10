@@ -101,5 +101,11 @@
   "פרוטוקול מחקר — ללא תוצאות ניסוי מדווחות": "Study protocol — no reported trial outcomes",
   "חששות אפשריים": "Potential concerns",
   "חלופות": "Alternatives",
-  "שאלות פתוחות": "Unanswered questions"
+  "שאלות פתוחות": "Unanswered questions",
+  "לא ניתן היה להתחבר לשירות ה-AI. אפשר לנסות שוב.": "The AI service could not be reached. You can retry.",
+  "שירות ה-AI החזיר תשובה שלא ניתן לקרוא. הסקירה לא נשמרה כתוצאה תקינה; אפשר לנסות שוב.": "The AI service returned an unreadable response. It was not saved as a valid review; you can retry.",
+  "בדיקת התמיכה במקורות לא הושלמה. לא הוצגה סקירה לא מאומתת; אפשר לנסות שוב.": "Source verification did not complete. An unverified review was not displayed; you can retry.",
+  "זמן העיבוד הסתיים לפני שהסקירה הושלמה. אפשר לנסות שוב.": "The processing window ended before the review completed. You can retry.",
+  "טיוטת סקירת הראיות לא עמדה במבנה הנדרש. אפשר לנסות שוב.": "The evidence draft did not match the required structure. You can retry.",
+  "בניסיון הישן לא נשמר פירוט הסיבה. ניסיון חוזר יציג אבחון מדויק יותר במקרה של כשל.": "This older attempt did not retain the detailed cause. A retry will show a more specific diagnosis if it fails."
 }

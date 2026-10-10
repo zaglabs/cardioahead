@@ -175,6 +175,46 @@ http
     }
 
     if (
+      evidenceTask?.task === "evidence_draft" &&
+      evidenceTask.question.includes("provider-credits")
+    ) {
+      res.statusCode = 400;
+      res.end(
+        JSON.stringify({
+          error: {
+            message: "Your credit balance is too low. Purchase credits.",
+          },
+        }),
+      );
+      return;
+    }
+    if (
+      evidenceTask?.task === "evidence_draft" &&
+      evidenceTask.question.includes("provider-malformed")
+    ) {
+      res.end(
+        JSON.stringify(
+          claude
+            ? {
+                stop_reason: "end_turn",
+                content: [{ type: "text", text: "unreadable output" }],
+              }
+            : {
+                status: "completed",
+                output: [
+                  {
+                    type: "message",
+                    content: [
+                      { type: "output_text", text: "unreadable output" },
+                    ],
+                  },
+                ],
+              },
+        ),
+      );
+      return;
+    }
+    if (
       evidenceTask?.task === "evidence_draft" ||
       evidenceTask?.task === "evidence_verify"
     ) {

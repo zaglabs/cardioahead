@@ -87,7 +87,7 @@ const errorJS = ts.transpileModule(
     },
   },
 ).outputText;
-const { classifyProviderFailure } = await import(
+const { classifyProviderFailure, classifyTransportFailure } = await import(
   "data:text/javascript;base64," + Buffer.from(errorJS).toString("base64")
 );
 test("provider failures distinguish API credits, authentication, model and request format", () => {
@@ -327,5 +327,22 @@ test("patient visuals require cited support and never infer current stenosis fro
       [source],
     ).area,
     "mitral",
+  );
+});
+
+test("AI timeouts and connection failures are classified without logging response text", () => {
+  assert.equal(
+    classifyTransportFailure(
+      new DOMException("sensitive text", "TimeoutError"),
+    ),
+    "AI_TIMEOUT",
+  );
+  assert.equal(
+    classifyTransportFailure(new DOMException("sensitive text", "AbortError")),
+    "AI_TIMEOUT",
+  );
+  assert.equal(
+    classifyTransportFailure(new TypeError("sensitive text")),
+    "AI_CONNECTION_FAILED",
   );
 });
