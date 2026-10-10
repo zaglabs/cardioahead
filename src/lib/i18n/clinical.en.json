@@ -114,5 +114,12 @@
   "בממצאים השמורים אין פירוט מספק לסימון אזור בביטחון. הרופא יכול לעיין במקורות; לא מוצגת פגיעה משוערת.": "The saved findings do not provide enough detail to mark an area confidently. The clinician can review the sources; no assumed abnormality is shown.",
   "הסבר חזותי לעיון הרופא ולהצגה במהלך הייעוץ לפי שיקול דעתו. הממצאים והסימונים נשענים על המקורות המצוטטים; התרשימים סכמטיים ודורשים אימות קליני.": "For clinician review and optional visual explanation during the consultation. Findings and markers are based on the cited sources; the schematics require clinical verification.",
   "לא ניתן למפות בביטחון את הממצאים השמורים לתרשים נתמך. הרופא יכול לעיין במקורות; לא מוצגת פגיעה משוערת.": "The saved findings cannot be mapped confidently to a supported diagram. The clinician can review the sources; no assumed abnormality is shown.",
-  "התרשימים יציגו רק מיקומים ושינויים תפקודיים הנתמכים בממצאים המצוטטים. שקפים ללא מיפוי נתמך יציגו את הממצאים ללא פגיעה משוערת. ההסבר החזותי מיועד להצגה בהנחיית הרופא במהלך הייעוץ ויישמר רק לאחר בקשה.": "Diagrams will show only locations and functional changes supported by the cited findings. Slides without supported mappings will show their findings without an assumed abnormality. The visual explanation is for clinician-led use during the consultation and will be saved only on request."
+  "התרשימים יציגו רק מיקומים ושינויים תפקודיים הנתמכים בממצאים המצוטטים. שקפים ללא מיפוי נתמך יציגו את הממצאים ללא פגיעה משוערת. ההסבר החזותי מיועד להצגה בהנחיית הרופא במהלך הייעוץ ויישמר רק לאחר בקשה.": "Diagrams will show only locations and functional changes supported by the cited findings. Slides without supported mappings will show their findings without an assumed abnormality. The visual explanation is for clinician-led use during the consultation and will be saved only on request.",
+  "ספק": "Provider",
+  "סוג": "Type",
+  "תאריך המקור": "Source date",
+  "מספר הפניה במקור": "Provider reference",
+  "לא זמין": "Unavailable",
+  "הפניה למקור": "Source reference",
+  "המסמך המקורי נשאר בכללית. כאן מוצגים קטעי ראיה שמורים בלבד.": "The original record remains in Clalit. Only retained evidence excerpts are shown here."
 }

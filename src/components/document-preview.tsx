@@ -9,6 +9,7 @@ import {
   Download,
 } from "lucide-react";
 import { HeartLoader } from "./heart-loader";
+import type { MedicalRecord } from "@/lib/medical-import/schema.mjs";
 import { useLanguage } from "./language-provider";
 import type {
   PDFDocumentProxy,
@@ -129,6 +130,7 @@ function DocumentPreview({
 }) {
   const { t } = useLanguage(),
     dialog = useRef<HTMLDialogElement>(null);
+  const [sourceRecord, setSourceRecord] = useState<MedicalRecord | null>(null);
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null),
     [error, setError] = useState(""),
     [page, setPage] = useState(target.page || 1),
@@ -161,6 +163,15 @@ function DocumentPreview({
         if (!response.ok) {
           const result = await response.json();
           throw new Error(result.message);
+        }
+        if (
+          response.headers.get("content-type")?.includes("application/json")
+        ) {
+          const source = await response.json();
+          if (source.kind !== "medical_record")
+            throw new Error("לא ניתן להציג את המקור.");
+          if (alive) setSourceRecord(source.record);
+          return;
         }
         const bytes = await response.arrayBuffer();
         if (!alive) return;
@@ -266,7 +277,7 @@ function DocumentPreview({
             )}
           </div>
         )}
-        {!pdf && !error && (
+        {!pdf && !sourceRecord && !error && (
           <div className="pdf-loading" role="status">
             <HeartLoader />
             {t("טוענים את המסמך…")}
@@ -276,6 +287,28 @@ function DocumentPreview({
           <p className="form-error" role="alert">
             {t(error)}
           </p>
+        )}
+        {sourceRecord && (
+          <div className="medical-source-preview">
+            <dl className="medical-provenance">
+              <dt>{t("ספק")}</dt>
+              <dd>Clalit</dd>
+              <dt>{t("סוג")}</dt>
+              <dd>{sourceRecord.category.replaceAll("_", " ")}</dd>
+              <dt>{t("תאריך המקור")}</dt>
+              <dd>{sourceRecord.record_date || t("לא זמין")}</dd>
+              <dt>{t("מספר הפניה במקור")}</dt>
+              <dd>{sourceRecord.provider_reference || t("לא זמין")}</dd>
+            </dl>
+            <p>
+              {t("המסמך המקורי נשאר בכללית. כאן מוצגים קטעי ראיה שמורים בלבד.")}
+            </p>
+            {sourceRecord.entries.map((entry) => (
+              <blockquote key={entry.id} dir="auto">
+                {entry.text}
+              </blockquote>
+            ))}
+          </div>
         )}
         {pdf && <PdfPage pdf={pdf} page={page} zoom={zoom} />}
       </div>

@@ -142,9 +142,96 @@ http
         : payload.input[0].content,
       docs = [];
 
+    if (
+      claude &&
+      payload.output_config?.format?.schema?.$defs?.citation?.properties
+        ?.record_id
+    ) {
+      const packet = JSON.parse(inputs[0].text),
+        sources = packet.records;
+      const cited = (source) => ({
+        record_id: source.id,
+        entry_id: source.entries[0].id,
+        quote: source.entries[0].text.slice(0, 300),
+      });
+      const statement = (source) => ({
+        text: bi(
+          "A fictional source finding was recorded.",
+          "תועד ממצא במקור הפיקטיבי.",
+        ),
+        date: source.record_date || "",
+        refs: [cited(source)],
+      });
+      const output = {
+        overview: statement(sources[0]),
+        sections: Object.entries(titles).map(([kind, title]) => ({
+          kind,
+          title,
+          items: kind === "findings" ? [statement(sources[0])] : [],
+          missing:
+            kind === "findings"
+              ? []
+              : [
+                  bi(
+                    "Not documented in these fictional sources.",
+                    "לא תועד במקורות הפיקטיביים.",
+                  ),
+                ],
+        })),
+        questions: [
+          bi(
+            "Review the captured source context.",
+            "יש לעיין בהקשר המקורות שנאספו.",
+          ),
+        ],
+        limitations: [
+          bi(
+            "Fictional fixture; partial collected sources.",
+            "בדיקה פיקטיבית; מקורות שנאספו באופן חלקי.",
+          ),
+        ],
+        relevance: sources.map((source) => ({
+          record_id: source.id,
+          priority: source.category === "other" ? "deferred" : "primary",
+          reason: bi(
+            source.category === "other"
+              ? "A peripheral fictional source is deferred for clinician review."
+              : "Relevant fictional laboratory context.",
+            source.category === "other"
+              ? "מקור פיקטיבי היקפי נדחה לעיון הרופא."
+              : "הקשר מעבדתי פיקטיבי רלוונטי.",
+          ),
+          refs: [cited(source)],
+        })),
+        visual_proposal: {
+          eligible: false,
+          reason: bi(
+            "No documented cardiac anatomy or functional finding for a disease illustration.",
+            "אין ממצא מתועד על אנטומיה או תפקוד הלב לצורך המחשה של מחלה.",
+          ),
+          slides: [],
+        },
+      };
+      calls.push({
+        type: "personal_import",
+        provider: "claude",
+        model: payload.model,
+        record_count: sources.length,
+      });
+      res.end(
+        JSON.stringify({
+          id: randomUUID(),
+          stop_reason: "end_turn",
+          content: [{ type: "text", text: JSON.stringify(output) }],
+        }),
+      );
+      return;
+    }
     let evidenceTask = null;
     try {
       evidenceTask = JSON.parse(inputs[0]?.text || "");
+      if (evidenceTask.task_name && evidenceTask.payload)
+        evidenceTask = evidenceTask.payload;
     } catch {}
     if (
       [

@@ -16,8 +16,11 @@ import {
   publicApproval,
   metadata,
 } from "@/lib/visit/service";
-import { documentVersion } from "@/lib/evidence/input";
-import { providerConfigured } from "@/lib/clinical/provider";
+import {
+  documentVersion,
+  scopedProviderConfigured,
+} from "@/lib/evidence/input";
+
 import {
   validateFindings,
   validateReport,
@@ -88,7 +91,7 @@ export async function GET(
       selected,
       candidates,
       clinician: ["admin", "professor"].includes(staff.role),
-      ai_configured: providerConfigured(),
+      ai_configured: await scopedProviderConfigured(id),
       email_configured: reportsEmailConfigured(),
       document_version: current,
       current_approval: currentApproval
@@ -136,7 +139,7 @@ export async function POST(
     );
     const store = visitStore(),
       state = await store.read(id),
-      { version: current, docs } = await documentVersion(id);
+      { version: current, hasSources } = await documentVersion(id);
     const base = uuid(input.baseVersionId, true),
       findings =
         state.versions.find((v) => v.id === state.workspace.findings_id) ||
@@ -173,13 +176,13 @@ export async function POST(
       return json({ ok: true, version: value });
     }
     if (["generate_lifestyle", "generate_summary"].includes(action)) {
-      if (!providerConfigured())
+      if (!(await scopedProviderConfigured(id)))
         throw new PortalError(
           503,
           "AI_NOT_CONFIGURED",
           "עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.",
         );
-      if (!docs.length)
+      if (!hasSources)
         throw new PortalError(
           409,
           "NO_DOCUMENTS",

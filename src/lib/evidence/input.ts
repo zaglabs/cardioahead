@@ -1,26 +1,48 @@
 import "server-only";
+import { latestMedicalImport } from "@/lib/medical-import/store";
+import {
+  importedVersion,
+  importedEvidenceContext,
+} from "@/lib/medical-import/evidence";
 import { PDFDocument } from "pdf-lib";
 import { getStore } from "@/lib/portal/store";
 import { hash } from "@/lib/portal/security";
 import { clinicalStore } from "@/lib/clinical/store";
-import { requestClinicalSummary } from "@/lib/clinical/provider";
+import {
+  requestClinicalSummary,
+  providerConfigured,
+} from "@/lib/clinical/provider";
+import { personalClaudeConfigured } from "@/lib/medical-import/engine";
 import { instructions } from "@/lib/clinical/engine";
 import { validateSummary } from "@/lib/clinical/schema";
 import fixtures from "@/lib/test-documents.json";
 import type { ClinicalSource } from "@/lib/clinical/types";
 import type { PatientContext, PatientFact } from "./types";
 export async function documentVersion(id: string) {
+  const imported = await latestMedicalImport(id);
+  if (imported)
+    return {
+      docs: [],
+      version: importedVersion(imported),
+      hasSources:
+        imported.status === "ready" &&
+        Boolean(imported.summary) &&
+        imported.ai_consent,
+    };
   const docs = (await getStore().documents(id)).sort((a, b) =>
     a.id.localeCompare(b.id),
   );
   return {
     docs,
+    hasSources: docs.length > 0,
     version: hash(
       JSON.stringify(docs.map((d) => ({ id: d.id, hash: d.sha256 }))),
     ),
   };
 }
 export async function readEvidenceContext(id: string, version: string) {
+  if (await latestMedicalImport(id))
+    return importedEvidenceContext(id, version);
   const { docs, version: current } = await documentVersion(id);
   if (current !== version || !docs.length) throw new Error("DOCUMENTS_CHANGED");
   const documents: ClinicalSource[] = [],
@@ -111,4 +133,11 @@ export async function readEvidenceContext(id: string, version: string) {
     });
   const context: PatientContext = { summary, documents, facts };
   return { context, content };
+}
+
+export async function scopedProviderConfigured(id: string) {
+  const imported = await latestMedicalImport(id);
+  return imported
+    ? imported.ai_consent && personalClaudeConfigured()
+    : providerConfigured();
 }

@@ -108,3 +108,11 @@ The runtime dependency audit reports no known vulnerabilities.
 The development toolchain still reports the upstream `braces` advisory
 [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm).
 Do not force-downgrade Next.js to satisfy the audit tool's major-version suggestion.
+
+## Owner-only Clalit personal test
+
+A separate scoped, consented personal-import flow is available for the protected administrator. It reads supported Clalit records through a local collector after human sign-in and saves the summary, provenance and short cited excerpts without attaching original files. Other-patient intake and real PDF uploads remain disabled. Collection coverage is explicitly partial.
+
+Apply migration 009 (AI settings) and migration 010 (medical imports) once in order. Keep ANTHROPIC_API_KEY as a sensitive server-only Vercel variable. Source processing for this flow always uses consent-bound Claude; API keys are never saved in clinical tables. No extra environment key or public local endpoint is needed.
+
+See [Clalit personal collector instructions](docs/clalit-pilot.md). Run the local collector from the installed Node/Playwright environment using npm run clalit:pilot. Sign in yourself, use a new manual card in the clinic space, and review the selected sources in the private local connection before importing.

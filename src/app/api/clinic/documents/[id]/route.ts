@@ -1,3 +1,5 @@
+import { medicalSourceById } from "@/lib/medical-import/store";
+import { json } from "@/lib/portal/security";
 import { getStore } from "@/lib/portal/store";
 import { requireStaff, failure, PortalError } from "@/lib/portal/security";
 export const runtime = "nodejs";
@@ -10,7 +12,14 @@ export async function GET(
     const { id } = await params;
     const store = getStore();
     const document = await store.document(id);
-    if (!document) throw new PortalError(404, "NOT_FOUND", "המסמך לא נמצא.");
+    if (!document) {
+      const source = await medicalSourceById(id);
+      if (!source) throw new PortalError(404, "NOT_FOUND", "המקור לא נמצא.");
+      const card = await store.appointment(source.appointment_id);
+      if (!card || card.deletion_requested_at)
+        throw new PortalError(410, "CARD_DELETING", "התיק נמצא בתהליך מחיקה.");
+      return json({ kind: "medical_record", record: source.record });
+    }
     const a = await store.appointment(document.appointment_id);
     if (!a || a.deletion_requested_at)
       throw new PortalError(

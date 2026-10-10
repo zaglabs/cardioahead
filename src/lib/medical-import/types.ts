@@ -1,0 +1,36 @@
+import type { MedicalBundle, MedicalSummary, MedicalSlide } from "./schema.mjs";
+export type MedicalImport = {
+  id: string;
+  appointment_id: string;
+  owner_id: string;
+  provider: "clalit";
+  source_hash: string;
+  bundle: MedicalBundle;
+  ai_consent: boolean;
+  consent_at: string;
+  status: "received" | "generating" | "ready" | "failed";
+  summary: MedicalSummary | null;
+  model: string | null;
+  error_code: string | null;
+  attempts: number;
+  lease_token: string | null;
+  lease_until: string | null;
+  visual: { slides: MedicalSlide[] } | null;
+  visual_created_by: string | null;
+  visual_created_at: string | null;
+  review_overrides: Record<string, boolean>;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  created_at: string;
+  completed_at: string | null;
+};
+export type ImportGrant = {
+  token_hash: string;
+  appointment_id: string;
+  owner_id: string;
+  ai_consent: boolean;
+  expires_at: string;
+  used_at: string | null;
+  import_id: string | null;
+  created_at: string;
+};

@@ -27,6 +27,8 @@ import type {
   VisitWorkspace,
 } from "@/lib/visit/types";
 type State = {
+  medicalImports?: import("@/lib/medical-import/types").MedicalImport[];
+  importGrants?: import("@/lib/medical-import/types").ImportGrant[];
   aiSettings?: import("@/lib/clinical/settings").AISettings;
   recordVersions: RecordVersion[];
   reportApprovals: Approval[];

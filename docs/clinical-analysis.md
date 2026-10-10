@@ -7,6 +7,7 @@ It adds private analysis/presentation tables, leases, bounded retries, clinician
 atomic presentation creation. No public/anon/authenticated table or RPC access is granted.
 
 In Vercel Production:
+
 - `ANTHROPIC_API_KEY`: the sensitive Claude API key.
 - `CARDIOAHEAD_AI_PROVIDER=claude`: current owner preference.
 - `CARDIOAHEAD_ENABLE_CLAUDE_TEST_PDFS=true`: explicitly approved fictional-document scope.
@@ -59,7 +60,16 @@ saved-record reuse without another model call, clinician authorization and denie
 The provider mock and local backend cannot run in hosted mode.
 
 Official API references:
+
 - [Claude PDF input](https://platform.claude.com/docs/en/build-with-claude/pdf-support)
 - [Claude structured outputs](https://platform.claude.com/docs/en/build-with-claude/structured-outputs)
 - [OpenAI PDF input](https://developers.openai.com/api/docs/guides/file-inputs)
 - [OpenAI structured outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+
+## Scoped personal Clalit pilot
+
+The protected owner can separately pair a read-only local collector to a new, document-free manual card after attesting self-account scope and explicitly consenting to Claude. This exception does not enable real PDF uploads or collection from other patients.
+
+Migration 010 stores provenance, short exact supporting excerpts and summary/relevance output, never original documents or full fetched source text. The collector clears its temporary buffer after an accepted transfer, at expiry and on shutdown. The server passes source text only in transient processing memory. No OpenAI fallback is permitted for these personal records. Failed processing requires recollection; completed summaries and clinician-created visuals are reused.
+
+See [the collector workflow](clalit-pilot.md) for coverage limits, source review and pairing.

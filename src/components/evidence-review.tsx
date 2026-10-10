@@ -101,7 +101,15 @@ function PatientReferences({
             <FileText size={14} />
             {
               documents.find((d) => d.document_id === r.document_id)?.filename
-            } · {t("עמוד")} {r.page}
+            } ·{" "}
+            {documents.find((source) => source.document_id === r.document_id)
+              ?.kind === "web_record" ? (
+              t("הפניה למקור")
+            ) : (
+              <>
+                {t("עמוד")} {r.page}
+              </>
+            )}
           </a>
           <blockquote dir="auto">{r.quote}</blockquote>
         </div>

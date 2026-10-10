@@ -6,6 +6,7 @@ import Link from "next/link";
 import { VisitWorkspace } from "./visit-workspace";
 import { EvidenceReview } from "./evidence-review";
 import { ClinicalInsights } from "./clinical-insights";
+import { MedicalRecords } from "./medical-records";
 import {
   DocumentPreviewProvider,
   useDocumentPreview,
@@ -57,7 +58,7 @@ function ClinicWorkspace({
   staff: Staff;
   initialAppointments: AppointmentView[];
 }) {
-  const { t, locale } = useLanguage();
+  const { t, locale, language } = useLanguage();
   const openDocument = useDocumentPreview();
   const [formMode, setFormMode] = useState<"invitation" | "clinic">(
     "invitation",
@@ -378,9 +379,13 @@ function ClinicWorkspace({
         <div className="info-box pilot-note">
           <ShieldCheck size={20} />
           <p>
-            {t(
-              "שלב בדיקות: יוצרים ביקורים פיקטיביים ומעלים את מסמכי הבדיקה בלבד.",
-            )}
+            {active?.personal_import_source
+              ? language === "he"
+                ? "בדיקה אישית: מידע שנאסף מכללית באישור בעל החשבון. המקורות המקוריים נשארים בכללית."
+                : "Personal test: Clalit information collected with the account owner’s permission. Original records remain in Clalit."
+              : t(
+                  "שלב בדיקות: יוצרים ביקורים פיקטיביים ומעלים את מסמכי הבדיקה בלבד.",
+                )}
           </p>
         </div>
         {showForm && (
@@ -669,8 +674,15 @@ function ClinicWorkspace({
                     className={tab === "documents" ? "active" : ""}
                   >
                     <FileText size={15} />
-                    {t(" מסמכים (")}
-                    {active.documents.length})
+                    {active.personal_import_source
+                      ? locale.startsWith("he")
+                        ? "מקורות ("
+                        : "Sources ("
+                      : t(" מסמכים (")}
+                    {active.personal_import_source
+                      ? active.medical_records_count
+                      : active.documents.length}
+                    )
                   </button>
                   <button
                     role="tab"
@@ -740,6 +752,16 @@ function ClinicWorkspace({
                               )
                             : t("המסמכים זמינים לעיון צוות המרפאה.")}
                       </p>
+                      {active.intake_mode === "clinic" &&
+                        active.documents.length === 0 &&
+                        (isAdmin(staff) || active.personal_import_source) && (
+                          <MedicalRecords
+                            appointment={active}
+                            staff={staff}
+                            mode="sources"
+                            onChanged={refresh}
+                          />
+                        )}
                       <div className="document-options">
                         {active.documents.map((d) => (
                           <button
@@ -764,16 +786,18 @@ function ClinicWorkspace({
                           </button>
                         ))}
                       </div>
-                      {active.status === "invited" && (
-                        <ClinicDocumentUpload
-                          key={active.id}
-                          appointment={active}
-                          onUploaded={refresh}
-                          onPrepared={() => setTab("report")}
-                        />
-                      )}
+                      {active.status === "invited" &&
+                        !active.personal_import_source && (
+                          <ClinicDocumentUpload
+                            key={active.id}
+                            appointment={active}
+                            onUploaded={refresh}
+                            onPrepared={() => setTab("report")}
+                          />
+                        )}
                       {!active.documents.length &&
-                        active.status !== "invited" && (
+                        active.status !== "invited" &&
+                        !active.personal_import_source && (
                           <div className="empty-report">
                             <FileText size={30} />
                             <h3>{t("ממתינים למסמכים.")}</h3>
@@ -783,6 +807,15 @@ function ClinicWorkspace({
                           </div>
                         )}
                     </>
+                  ) : active.personal_import_source &&
+                    (tab === "report" || tab === "presentation") ? (
+                    <MedicalRecords
+                      key={active.id + ":" + tab}
+                      appointment={active}
+                      staff={staff}
+                      mode={tab}
+                      onChanged={refresh}
+                    />
                   ) : tab === "lifestyle" || tab === "visit" ? (
                     <VisitWorkspace
                       key={active.id + ":" + tab}

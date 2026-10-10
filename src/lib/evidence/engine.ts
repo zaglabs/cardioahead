@@ -5,7 +5,7 @@ import { evidenceStore } from "./store";
 import { readEvidenceContext } from "./input";
 import { searchTopics } from "./queries";
 import { retrieveLiterature } from "./retrieval";
-import { requestEvidenceJSON } from "@/lib/clinical/provider";
+import { requestScopedEvidenceJSON } from "@/lib/medical-import/evidence";
 import {
   evidenceSchema,
   verificationSchema,
@@ -76,7 +76,8 @@ export async function runEvidenceReview(record: EvidenceRecord) {
       search_limitations: retrieval.limitations,
     };
     await advance({ stage: "writing" });
-    const draft = await requestEvidenceJSON(
+    const draft = await requestScopedEvidenceJSON(
+      record.appointment_id,
       "clinical_evidence",
       drafting,
       payload,
@@ -93,7 +94,8 @@ export async function runEvidenceReview(record: EvidenceRecord) {
     let claims = checked.claims,
       omitted = checked.omitted;
     await advance({ stage: "verifying" });
-    const verified = await requestEvidenceJSON(
+    const verified = await requestScopedEvidenceJSON(
+      record.appointment_id,
       "clinical_evidence_verification",
       verifying,
       {

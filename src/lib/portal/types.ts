@@ -8,6 +8,8 @@ export type Staff = {
   created_at: string;
 };
 export type Appointment = {
+  personal_import_source?: boolean;
+  medical_records_count?: number;
   deletion_requested_at?: string | null;
   intake_mode?: "invitation" | "clinic";
   id: string;
@@ -57,6 +59,8 @@ export type AppointmentView = Pick<
   | "created_at"
   | "submitted_at"
   | "intake_mode"
+  | "personal_import_source"
+  | "medical_records_count"
   | "deletion_requested_at"
 > & { documents: DocumentView[] };
 export type DocumentView = Pick<

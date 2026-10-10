@@ -1,5 +1,10 @@
 export type Bilingual = { he: string; en: string };
-export type Evidence = { document_id: string; page: number; quote: string };
+export type Evidence = {
+  document_id: string;
+  page: number;
+  quote: string;
+  record_entry?: string;
+};
 export type ClinicalFact = {
   text: Bilingual;
   date: string | null;
@@ -34,6 +39,10 @@ export type ClinicalSummary = {
   };
 };
 export type ClinicalSource = {
+  kind?: "web_record";
+  citation_unit?: "record";
+  provider_date?: string | null;
+  provider_reference?: string | null;
   document_id: string;
   filename: string;
   sha256: string;

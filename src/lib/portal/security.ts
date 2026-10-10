@@ -64,7 +64,7 @@ export function sameOrigin(request: Request) {
       "הבקשה לא אושרה. רעננו את העמוד ונסו שוב.",
     );
 }
-export async function body(request: Request, maxBytes=8192) {
+export async function body(request: Request, maxBytes = 8192) {
   const text = await request.text();
   if (Buffer.byteLength(text) > maxBytes)
     throw new PortalError(413, "TOO_LARGE", "הבקשה גדולה מדי.");
@@ -212,6 +212,12 @@ export function appointmentView(
     id: a.id,
     patient_label: a.patient_label,
     intake_mode: a.intake_mode || "invitation",
+    ...(a.personal_import_source
+      ? {
+          personal_import_source: true,
+          medical_records_count: a.medical_records_count || 0,
+        }
+      : {}),
     deletion_requested_at: a.deletion_requested_at || null,
     appointment_at: a.appointment_at,
     status: a.status,

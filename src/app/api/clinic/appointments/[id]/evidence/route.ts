@@ -8,8 +8,11 @@ import {
   PortalError,
 } from "@/lib/portal/security";
 import { getStore } from "@/lib/portal/store";
-import { providerConfigured } from "@/lib/clinical/provider";
-import { documentVersion } from "@/lib/evidence/input";
+
+import {
+  documentVersion,
+  scopedProviderConfigured,
+} from "@/lib/evidence/input";
 import { evidenceStore } from "@/lib/evidence/store";
 import { runEvidenceReview } from "@/lib/evidence/engine";
 export const maxDuration = 300;
@@ -45,7 +48,7 @@ export async function GET(
     const { version } = await documentVersion(id),
       records = await evidenceStore().list(id);
     return json({
-      configured: providerConfigured(),
+      configured: await scopedProviderConfigured(id),
       document_version: version,
       review: (() => {
         const selected = new URL(request.url).searchParams.get("review");
@@ -90,7 +93,7 @@ export async function POST(
       !["generate", "regenerate", "retry"].includes(input.action)
     )
       throw new PortalError(400, "BAD_REQUEST", "בקשה לא תקינה.");
-    if (!providerConfigured())
+    if (!(await scopedProviderConfigured(id)))
       throw new PortalError(
         503,
         "AI_NOT_CONFIGURED",
@@ -102,8 +105,8 @@ export async function POST(
       throw new PortalError(400, "BAD_REQUEST", "בדקו את הפרטים שהזנתם.");
     const kind =
         input.questionKind === "plan" && question ? "plan" : "question",
-      { docs, version } = await documentVersion(id);
-    if (!docs.length)
+      { hasSources, version } = await documentVersion(id);
+    if (!hasSources)
       throw new PortalError(
         409,
         "NO_DOCUMENTS",
