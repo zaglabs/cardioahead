@@ -3481,3 +3481,26 @@ button.document-preview-row:focus-visible { outline: 3px solid #738e5b; outline-
   .pdf-toolbar { gap: 6px; padding: 6px; }
   .clinic-upload .demo-upload-area { padding-inline: 12px; }
 }
+.case-finding-preview { padding: 14px 18px; border-inline-start: 3px solid #edc891; background: #ffffff0b; margin-bottom: 16px; border-radius: 8px; }
+.case-finding-preview > span { font-size: .875rem; color: #f1d3a8; }
+.presentation-viewer .case-finding-preview p { color: #edf4e8; line-height: 1.7; margin: 8px 0; font-size: 1.125rem; }
+.case-finding-preview time { color: #cfdfd2; font-size: .875rem; }
+.presentation-mechanism-detail { color: #cee3d1; line-height: 1.7; margin-block: 14px; }
+.presentation-mechanism-detail summary { cursor: pointer; font-size: .9375rem; }
+.presentation-viewer .presentation-mechanism-detail p { color: #d7e6da; font-size: 1rem; }
+.patient-visual-switch { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 14px 8px; }
+.patient-visual-switch button { color: #e2eddc; border: 1px solid #ffffff35; background: #ffffff08; border-radius: 20px; min-height: 44px; padding: 8px 14px; cursor: pointer; font-size: .9375rem; }
+.patient-visual-switch button[aria-pressed="true"] { background: #d5e9c9; color: #153d30; border-color: #d5e9c9; }
+.patient-heart-comparison { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 10px; padding: 8px; }
+.patient-heart-comparison > section { min-width: 0; border: 1px solid #b6d0b630; border-radius: 14px; background: #092f2833; }
+.patient-heart-comparison h4 { font-size: .9375rem; line-height: 1.6; text-align: center; color: #e1ecdc; padding: 10px; margin: 0; }
+.patient-heart-comparison [data-view="patient"] { border-color: #edc89180; }
+.patient-heart-comparison [data-view="patient"] h4 { color: #f1d3a8; }
+.patient-heart-comparison .heart-anatomy-labels { display: none; }
+.patient-visual-caption { text-align: center; padding: 16px; }
+.patient-visual-caption strong { font-size: 1.125rem; color: #f1d3a8; }
+.presentation-viewer .patient-visual-caption p { font-size: .9375rem; line-height: 1.7; color: #d8e8d9; margin-block: 10px; }
+.unsupported-patient-visual { padding: 25px 18px; border: 1px dashed #c1d0b750; border-radius: 12px; margin: 14px; }
+.presentation-viewer .unsupported-patient-visual p { color: #d8e8d9; line-height: 1.7; }
+@media (max-width:680px) { .patient-heart-comparison { grid-template-columns: 1fr; gap: 16px; } }
+.patient-heart-comparison h4 { min-height: 68px; display: flex; align-items: center; justify-content: center; }

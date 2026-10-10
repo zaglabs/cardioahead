@@ -9,6 +9,7 @@ import {
 } from "@/lib/portal/security";
 import { getStore } from "@/lib/portal/store";
 import { clinicalStore } from "@/lib/clinical/store";
+import { resolveVisualFinding } from "@/lib/clinical/presentation-focus";
 import { analysisConfigured, runAnalysis } from "@/lib/clinical/engine";
 export const maxDuration = 300;
 async function appointment(id: string) {
@@ -93,10 +94,16 @@ export async function POST(
         "יצירת מצגת ואישור תוכן זמינים לרופא או למנהל בלבד.",
       );
     if (action === "create_presentation") {
+      const existing = await db.presentation(id);
+      if (existing)
+        return json({ ok: true, presentation: existing, reused: true });
       const analysis = await db.get(id);
       if (
         analysis?.status !== "ready" ||
-        !analysis.summary?.presentation.eligible
+        !analysis.summary?.presentation.eligible ||
+        !analysis.summary.presentation.slides.some((slide) =>
+          resolveVisualFinding(slide, analysis.sources),
+        )
       )
         throw new PortalError(
           409,

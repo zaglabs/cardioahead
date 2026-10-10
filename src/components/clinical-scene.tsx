@@ -8,7 +8,16 @@ import {
   lumenRadius,
 } from "@/lib/clinical/illustration-motion";
 import type { SceneKind } from "@/lib/clinical/types";
-type Props = { kind: SceneKind; progress: number; intervention: boolean };
+import type { FocusArea } from "@/lib/clinical/presentation-focus";
+type Props = {
+  kind: SceneKind;
+  progress: number;
+  intervention: boolean;
+  focus?: FocusArea;
+  patient?: boolean;
+  locationOnly?: boolean;
+  compact?: boolean;
+};
 function Cell({
   x,
   y,
@@ -253,14 +262,21 @@ function Heart({
   progress,
   id,
   t,
+  focus,
+  patient = false,
+  locationOnly = false,
 }: {
   kind: SceneKind;
   progress: number;
   id: string;
   t: (s: string) => string;
+  focus?: FocusArea;
+  patient?: boolean;
+  locationOnly?: boolean;
 }) {
   const cycle = cardiacCycle(progress),
     c = cycle.contraction;
+  const lvContraction = c * (patient ? 0.45 : 1);
   const mitralAngle = cycle.mitralOpen ? 28 : 0,
     aorticAngle = cycle.aorticOpen ? 35 : 0;
   const filling = cycle.mitralOpen,
@@ -272,6 +288,7 @@ function Heart({
       role="img"
       aria-label={t("לב סכמטי להמחשת תפקוד, אינו שחזור אנטומי של המטופל")}
       data-progress={progress.toFixed(4)}
+      data-finding-view={patient ? "documented" : "reference"}
       data-cardiac-phase={cycle.phase}
       data-mitral-open={cycle.mitralOpen}
       data-aortic-open={cycle.aorticOpen}
@@ -399,7 +416,7 @@ function Heart({
           </g>
           <g
             className="lv-cavity"
-            transform={`translate(343 314) scale(${1 - c * 0.2} ${1 - c * 0.1}) translate(-343 -314)`}
+            transform={`translate(343 314) scale(${1 - lvContraction * 0.2} ${1 - lvContraction * 0.1}) translate(-343 -314)`}
           >
             <path
               d="M336 228C365 213 410 239 399 278C388 322 355 365 324 388L324 250Z"
@@ -467,7 +484,8 @@ function Heart({
             opacity=".4"
           />
         </g>
-        {filling &&
+        {!locationOnly &&
+          filling &&
           Array.from({ length: 4 }, (_, i) => {
             const q = (progress * 2.8 + i / 4) % 1;
             return (
@@ -480,7 +498,8 @@ function Heart({
               />
             );
           })}
-        {ejecting &&
+        {!locationOnly &&
+          ejecting &&
           Array.from({ length: 5 }, (_, i) => {
             const q = ((progress - 0.46) / 0.22 + i / 5) % 1;
             const x = q < 0.58 ? 334 : 334 - (q - 0.58) * 145;
@@ -521,28 +540,148 @@ function Heart({
           </g>
         )}
       </g>
-      <path
-        d="M379 314L453 314"
-        fill="none"
-        stroke="#efcaaa"
-        strokeWidth="1.5"
-      />
-      <text x="460" y="309" fill="#f2ddbe" fontSize="17">
-        {t("החדר השמאלי")}
-      </text>
-      <path
-        d="M392 191L453 191"
-        fill="none"
-        stroke="#efcaaa"
-        strokeWidth="1.5"
-      />
-      <text x="460" y="187" fill="#f2ddbe" fontSize="17">
-        {t("העלייה השמאלית")}
-      </text>
+      {focus && (
+        <g className="documented-area-marker" data-focus-area={focus}>
+          {(["lad", "rca", "lcx"] as string[]).includes(focus) && (
+            <g fill="none" strokeLinecap="round">
+              <path
+                d="M343 171Q320 210 326 269L315 382"
+                stroke={focus === "lad" ? "#ffe09e" : "#f5af91"}
+                strokeWidth={focus === "lad" ? 7 : 3}
+              />
+              <path
+                d="M253 173Q190 194 188 252Q201 292 233 318"
+                stroke={focus === "rca" ? "#ffe09e" : "#f5af91"}
+                strokeWidth={focus === "rca" ? 7 : 3}
+              />
+              <path
+                d="M343 171Q393 162 433 214"
+                stroke={focus === "lcx" ? "#ffe09e" : "#f5af91"}
+                strokeWidth={focus === "lcx" ? 7 : 3}
+                strokeDasharray={focus === "lcx" ? "7 4" : undefined}
+              />
+            </g>
+          )}
+          <ellipse
+            cx={
+              focus === "rca"
+                ? 212
+                : focus === "lcx"
+                  ? 395
+                  : focus === "atria"
+                    ? 305
+                    : focus === "mitral"
+                      ? 359
+                      : focus === "aortic"
+                        ? 333
+                        : focus === "lv"
+                          ? 369
+                          : focus === "lad"
+                            ? 328
+                            : 345
+            }
+            cy={
+              focus === "lv"
+                ? 308
+                : focus === "lad"
+                  ? 284
+                  : focus === "rca"
+                    ? 250
+                    : focus === "lcx"
+                      ? 189
+                      : focus === "atria"
+                        ? 187
+                        : focus === "mitral"
+                          ? 228
+                          : 207
+            }
+            rx={
+              focus === "lv"
+                ? 56
+                : focus === "atria"
+                  ? 118
+                  : focus === "lad"
+                    ? 26
+                    : focus === "mitral"
+                      ? 30
+                      : focus === "aortic"
+                        ? 20
+                        : 39
+            }
+            ry={
+              focus === "lv"
+                ? 83
+                : focus === "atria"
+                  ? 45
+                  : focus === "lad"
+                    ? 51
+                    : focus === "mitral"
+                      ? 18
+                      : focus === "aortic"
+                        ? 15
+                        : 32
+            }
+            fill="#ffdc8320"
+            stroke="#ffe09e"
+            strokeWidth="4"
+            strokeDasharray="8 5"
+          />
+          <path
+            d={
+              focus === "lv"
+                ? "M471 352L400 325m14-1-14 1 7 12"
+                : focus === "rca"
+                  ? "M112 297L180 267m-8 12 8-12-14-2"
+                  : focus === "lcx"
+                    ? "M487 145L428 174m5-13-5 13 14 1"
+                    : focus === "atria"
+                      ? "M112 116L223 161m-14-1 14 1-7-12"
+                      : focus === "mitral"
+                        ? "M471 251L399 237m14-5-14 5 9 10"
+                        : focus === "aortic"
+                          ? "M458 126L365 182m5-14-5 14 14-1"
+                          : "M462 326L327 300m14-3-14 3 8 11"
+            }
+            fill="none"
+            stroke="#ffe09e"
+            strokeWidth="4"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
+      )}
+      <g className="heart-anatomy-labels">
+        <path
+          d="M379 314L453 314"
+          fill="none"
+          stroke="#efcaaa"
+          strokeWidth="1.5"
+        />
+        <text x="460" y="309" fill="#f2ddbe" fontSize="17">
+          {t("החדר השמאלי")}
+        </text>
+        <path
+          d="M392 191L453 191"
+          fill="none"
+          stroke="#efcaaa"
+          strokeWidth="1.5"
+        />
+        <text x="460" y="187" fill="#f2ddbe" fontSize="17">
+          {t("העלייה השמאלית")}
+        </text>
+      </g>
     </svg>
   );
 }
-export function ClinicalScene({ kind, progress, intervention }: Props) {
+export function ClinicalScene({
+  kind,
+  progress,
+  intervention,
+  focus,
+  patient = false,
+  locationOnly = false,
+  compact = false,
+}: Props) {
   const { t } = useLanguage(),
     id = useId().replace(/:/g, ""),
     reduced = useReducedMotion();
@@ -564,40 +703,50 @@ export function ClinicalScene({ kind, progress, intervention }: Props) {
         </div>
       </div>
     );
-  const artery = kind === "coronary" || kind === "stent";
+  const artery = !locationOnly && (kind === "coronary" || kind === "stent");
   const cycle = cardiacCycle(progress);
   return (
     <div className="mechanism-visual">
       {artery ? (
         <Artery progress={progress} expanded={expansion} id={id} t={t} />
       ) : (
-        <Heart kind={kind} progress={progress} id={id} t={t} />
+        <Heart
+          kind={kind}
+          progress={progress}
+          id={id}
+          t={t}
+          focus={focus}
+          patient={patient}
+          locationOnly={locationOnly}
+        />
       )}
-      <div className="mechanism-caption">
-        <span className="mechanism-phase">
-          {artery
-            ? t("זרימה בכיוון אחד")
-            : cycle.phase === "filling"
-              ? t("מילוי החדר")
-              : cycle.phase === "contraction"
-                ? t("תחילת ההתכווצות")
-                : cycle.phase === "ejection"
-                  ? t("התכווצות ופליטה")
-                  : t("הרפיה")}
-        </span>
-        <p>
-          {artery
-            ? t("החלקיקים מואצים במעבר הצר. הרובד נשאר בדופן.")
-            : cycle.phase === "filling"
-              ? t("המסתם המיטרלי פתוח; דם נכנס לחדר השמאלי.")
-              : cycle.phase === "contraction"
-                ? t("שני המסתמים סגורים לזמן קצר בתחילת ההתכווצות.")
-                : cycle.phase === "ejection"
-                  ? t("המסתם המיטרלי נסגר; דם נפלט דרך מסתם אבי העורקים.")
-                  : t("החדר נרפה; מסתם אבי העורקים נסגר לפני המילוי הבא.")}
-        </p>
-        <small>{t("המחשה מואטת של מנגנון כללי — לא מדידה של המטופל")}</small>
-      </div>
+      {!compact && (
+        <div className="mechanism-caption">
+          <span className="mechanism-phase">
+            {artery
+              ? t("זרימה בכיוון אחד")
+              : cycle.phase === "filling"
+                ? t("מילוי החדר")
+                : cycle.phase === "contraction"
+                  ? t("תחילת ההתכווצות")
+                  : cycle.phase === "ejection"
+                    ? t("התכווצות ופליטה")
+                    : t("הרפיה")}
+          </span>
+          <p>
+            {artery
+              ? t("החלקיקים מואצים במעבר הצר. הרובד נשאר בדופן.")
+              : cycle.phase === "filling"
+                ? t("המסתם המיטרלי פתוח; דם נכנס לחדר השמאלי.")
+                : cycle.phase === "contraction"
+                  ? t("שני המסתמים סגורים לזמן קצר בתחילת ההתכווצות.")
+                  : cycle.phase === "ejection"
+                    ? t("המסתם המיטרלי נסגר; דם נפלט דרך מסתם אבי העורקים.")
+                    : t("החדר נרפה; מסתם אבי העורקים נסגר לפני המילוי הבא.")}
+          </p>
+          <small>{t("המחשה מואטת של מנגנון כללי — לא מדידה של המטופל")}</small>
+        </div>
+      )}
     </div>
   );
 }

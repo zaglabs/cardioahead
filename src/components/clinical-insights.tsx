@@ -1,5 +1,6 @@
 "use client";
 import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
+import { resolveVisualFinding } from "@/lib/clinical/presentation-focus";
 
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -149,6 +150,12 @@ export function ClinicalInsights({
   }
   const summary = data?.analysis?.summary;
   const sources = data?.analysis?.sources || [];
+  const canIllustrate = Boolean(
+    summary?.presentation.eligible &&
+    summary.presentation.slides.some((slide) =>
+      resolveVisualFinding(slide, sources),
+    ),
+  );
   const preparing = Boolean(
     data?.configured &&
     appointment.status !== "invited" &&
@@ -348,12 +355,18 @@ export function ClinicalInsights({
                 {t("הצעה לפרופ׳ מאור — טרם נוצרה מצגת")}
               </span>
               <h3>
-                {summary.presentation.eligible
+                {canIllustrate
                   ? t("אפשר להכין הסבר חזותי מהמסמכים.")
                   : t("אין עדיין בסיס מספק למצגת חזותית.")}
               </h3>
-              <p>{summary.presentation.reason[language]}</p>
-              {summary.presentation.eligible && (
+              <p>
+                {canIllustrate
+                  ? summary.presentation.reason[language]
+                  : t(
+                      "לא ניתן למפות בביטחון את הממצאים השמורים לתרשים נתמך. הרופא יכול לעיין במקורות; לא מוצגת פגיעה משוערת.",
+                    )}
+              </p>
+              {canIllustrate && (
                 <>
                   <h4>{t("מה המצגת תציג")}</h4>
                   <ol>
@@ -369,7 +382,7 @@ export function ClinicalInsights({
                   </ol>
                   <p className="clinical-format-note">
                     {t(
-                      "תוצג המחשה סכמטית בלבד. אפשרויות טיפול יוצגו לפי התיעוד, לא כהמלצה חדשה. המצגת תישמר רק לאחר לחיצה על הכפתור.",
+                      "התרשימים יציגו רק מיקומים ושינויים תפקודיים הנתמכים בממצאים המצוטטים. שקפים ללא מיפוי נתמך יציגו את הממצאים ללא פגיעה משוערת. המצגת מיועדת להצגה בהנחיית הרופא במהלך הייעוץ ותישמר רק לאחר בקשה.",
                     )}
                   </p>
                   <button

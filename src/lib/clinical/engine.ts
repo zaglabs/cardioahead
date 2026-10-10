@@ -21,9 +21,10 @@ Separate historical findings from current findings. Absence of documentation is 
 Include exactly six sections: referral, history, findings, medications, allergies, plan.
 List documented facts and separately list missing or ambiguous information. Do not invent medication doses, changes, allergy status, symptoms or a new diagnosis.
 Questions are questions for the appointment, never clinical directives. Conflicts cite both sources; differing dates alone are not a conflict.
-The presentation field is ONLY a proposed outline. No presentation is created automatically.
+The presentation field is ONLY a proposed outline for the clinician to show during the consultation, never a patient pre-appointment handout. No presentation is created automatically.
+Prioritize this case: each slide title and explanation should state the documented condition, affected location, known measurements and chronology. Put general mechanism explanations in context of those cited facts. Include short verbatim evidence that explicitly supports any named anatomical location and functional impairment; do not guess location, severity, vessel stenosis or a current abnormality from a past procedure.
 eligible=true only if a documented condition can be explained using a pumping, coronary, stent, valve or rhythm schematic. care is a discussion overview, not an anatomical scene.
-Use 2-6 concise slides if eligible. Only select stent when stent/PCI is explicitly documented.
+Use 2-6 concise slides if eligible. Only select stent when a stent is explicitly documented; PCI alone does not establish a stent.
 Label past procedures as historical and never imply that a new procedure is indicated.
 Scenes illustrate general mechanisms, not this person's exact anatomy, flow, stenosis percentage or rhythm trace.
 key_value may contain ONLY an explicitly documented measurement; otherwise null. Never fabricate a healthy reference value or forecast treatment improvement.

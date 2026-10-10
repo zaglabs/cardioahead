@@ -143,7 +143,7 @@ test("submitted PDFs produce a cited summary; proposal requires explicit creatio
     .getByRole("button", { name: "Create presentation", exact: true })
     .click();
   await expect(page.locator(".presentation-viewer")).toBeVisible();
-  await expect(page.locator("svg.clinical-scene")).toBeVisible();
+  await expect(page.locator("svg.clinical-scene").first()).toBeVisible();
   const saved = (await (await owner.get(endpoint)).json()).presentation;
   expect(saved.content.renderer_version).toBe(1);
   expect(saved.content.sources).toHaveLength(2);
@@ -391,7 +391,7 @@ test("summary heartbeat follows processing state and stops on failure", async ({
   await owner.dispose();
 });
 
-test("physiology scenes pause precisely, expose valve phases and retain plaque during stent expansion", async ({
+test("patient comparison and markers follow cited findings and preserve unknown anatomy", async ({
   page,
   playwright,
 }) => {
@@ -399,26 +399,64 @@ test("physiology scenes pause precisely, expose valve phases and retain plaque d
     baseURL: origin,
     storageState: "tmp/owner-auth.json",
   });
-  const label = "Visual review " + test.info().project.name;
+  const label = "Patient visual " + test.info().project.name;
   const invitation = await (
     await owner.post("/api/clinic/appointments", {
       headers,
       data: { patientLabel: label, language: "en" },
     })
   ).json();
-  const bi = (value: string) => ({ he: value, en: value });
-  const slides = ["pumping", "coronary", "stent", "valve", "rhythm"].map(
-    (kind) => ({
-      kind,
-      title: bi("Fictional teaching illustration"),
-      explanation: bi(
-        "General mechanism for visual review; no patient anatomy or treatment forecast.",
-      ),
-      bullets: [],
-      key_value:
-        kind === "pumping" ? bi("EF 38% — fictional source record") : null,
-    }),
-  );
+  const bi = (s: string) => ({ he: s, en: s });
+  const fact = (text: string, quote: string) => ({
+    text: bi(text),
+    date: null,
+    refs: [{ document_id: "visual-source", page: 1, quote }],
+  });
+  const source = {
+    document_id: "visual-source",
+    filename: "fictional-case.pdf",
+    pages: 1,
+    sha256: "test",
+  };
+  const slides = [
+    {
+      kind: "pumping",
+      title: bi("Documented reduced LV function"),
+      bullets: [
+        fact(
+          "Reduced left ventricular systolic function",
+          "הרחבה קלה של חדר שמאל וירידה בתפקוד הסיסטולי.",
+        ),
+      ],
+      key_value: bi("EF 38% — documented"),
+    },
+    {
+      kind: "stent",
+      title: bi("Historical coronary procedure"),
+      bullets: [fact("Prior LAD PCI in 2018 (historical)", "LAD PCI in 2018")],
+      key_value: null,
+    },
+    {
+      kind: "valve",
+      title: bi("Documented mitral finding"),
+      bullets: [fact("Mitral stenosis", "Mitral stenosis")],
+      key_value: null,
+    },
+    {
+      kind: "rhythm",
+      title: bi("Location not documented"),
+      bullets: [
+        fact(
+          "Rhythm problem, location not specified",
+          "Rhythm information unavailable",
+        ),
+      ],
+      key_value: null,
+    },
+  ].map((s) => ({
+    ...s,
+    explanation: bi("Additional mechanism explanation for the clinician"),
+  }));
   await page
     .context()
     .addCookies(
@@ -428,7 +466,7 @@ test("physiology scenes pause precisely, expose valve phases and retain plaque d
     "**/api/clinic/appointments/" + invitation.appointment.id + "/analysis",
     async (route) => {
       if (route.request().method() !== "GET")
-        throw new Error("Visual inspection must not regenerate a saved record");
+        throw new Error("Reopening must not recreate a saved presentation");
       await route.fulfill({
         json: {
           configured: true,
@@ -438,16 +476,16 @@ test("physiology scenes pause precisely, expose valve phases and retain plaque d
             summary: {
               presentation: { eligible: true, reason: bi("Test"), slides },
             },
-            sources: [],
+            sources: [source],
             attempts: 1,
           },
           presentation: {
-            id: "visual-only",
-            created_at: "2026-10-09T10:00:00Z",
+            id: "saved-visual",
+            created_at: "2026-10-10T10:00:00Z",
             content: {
               renderer_version: 1,
               title: bi("Test"),
-              sources: [],
+              sources: [source],
               slides,
             },
           },
@@ -458,80 +496,113 @@ test("physiology scenes pause precisely, expose valve phases and retain plaque d
   await page.goto("/admin?lang=en");
   await page.locator(".case-card").filter({ hasText: label }).click();
   await page.getByRole("tab", { name: "Simulation / presentation" }).click();
-  const svg = page.locator("svg.clinical-scene");
   await expect(
-    page.getByRole("button", { name: "Pause animation" }),
+    page.getByText("For clinician-led presentation during the consultation", {
+      exact: true,
+    }),
   ).toBeVisible();
-  const first = await svg.getAttribute("data-progress");
-  await expect.poll(() => svg.getAttribute("data-progress")).not.toBe(first);
-  await page.getByRole("button", { name: "Pause animation" }).click();
-  const frozen = await svg.getAttribute("data-progress");
-  const later = await svg.evaluate(async (el) => {
-    await new Promise((resolve) => setTimeout(resolve, 220));
-    return el.getAttribute("data-progress");
-  });
-  expect(later).toBe(frozen);
-  await page.getByRole("button", { name: "Show filling" }).click();
-  await expect(svg).toHaveAttribute("data-mitral-open", "true");
-  await expect(svg).toHaveAttribute("data-aortic-open", "false");
-  const filled = await page.locator(".lv-cavity").getAttribute("transform");
-  await page.getByRole("button", { name: "Show ejection" }).click();
-  await expect(page.locator(".mechanism-caption p")).toHaveCSS(
-    "color",
-    "rgb(216, 232, 217)",
-  );
-  await expect(svg).toHaveAttribute("data-mitral-open", "false");
-  await expect(svg).toHaveAttribute("data-aortic-open", "true");
-  expect(await page.locator(".lv-cavity").getAttribute("transform")).not.toBe(
-    filled,
-  );
-  await page
-    .locator(".presentation-viewer")
-    .screenshot({
-      path: "tmp/physiology-heart-" + test.info().project.name + ".png",
-    });
-  await page.getByRole("button", { name: "Animate explanation" }).click();
-  await page.getByRole("button", { name: "Slow motion" }).click();
   await expect(
-    page.getByRole("button", { name: "Slow motion" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Next slide" }).click();
-  await expect(svg).toHaveClass(/artery-scene/);
-  await page.getByRole("button", { name: "Pause animation" }).click();
-  await expect(page.locator(".artery-plaque")).toHaveCount(2);
-  await page
-    .locator(".presentation-viewer")
-    .screenshot({
-      path: "tmp/physiology-artery-" + test.info().project.name + ".png",
-    });
-  await page.getByRole("button", { name: "Next slide" }).click();
-  await page.getByRole("button", { name: "Illustrate stent support" }).click();
-  await expect(svg).toHaveAttribute("data-stent-expansion", "1.000", {
-    timeout: 5000,
-  });
-  await expect(page.locator(".artery-plaque")).toHaveCount(2);
-  await page
-    .locator(".presentation-graphic")
-    .screenshot({
-      path: "tmp/physiology-stent-" + test.info().project.name + ".png",
-    });
-  await page.getByRole("button", { name: "Next slide" }).click();
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(
-    page.getByRole("button", { name: "Animate explanation" }),
-  ).toBeDisabled();
-  await page.getByRole("button", { name: "Show filling" }).click();
-  await expect(svg).toHaveAttribute("data-mitral-open", "true");
+    page.getByText("An explanation to discuss with your doctor", {
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  await expect(page.locator(".patient-heart-comparison svg")).toHaveCount(2);
+  await expect(page.locator('[data-focus-area="lv"]')).toBeVisible();
   await page.getByRole("button", { name: "Show ejection" }).click();
-  await expect(svg).toHaveAttribute("data-aortic-open", "true");
+  const normal = await page
+    .locator('[data-view="reference"] .lv-cavity')
+    .getAttribute("transform");
+  expect(
+    await page
+      .locator('[data-view="patient"] .lv-cavity')
+      .getAttribute("transform"),
+  ).not.toBe(normal);
+  await page.locator(".presentation-viewer").screenshot({
+    path: "tmp/patient-comparison-" + test.info().project.name + ".png",
+  });
+  await page.getByRole("button", { name: "Highlight documented area" }).click();
+  await expect(page.locator(".patient-area-view svg")).toHaveCount(1);
+  await page.getByRole("button", { name: "Next slide" }).click();
+  await expect(page.locator('[data-focus-area="lad"]')).toBeVisible();
+  await expect(page.locator(".artery-plaque")).toHaveCount(0);
+  await expect(
+    page.getByText("Historical documentation", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Illustrate stent support" }),
+  ).toHaveCount(0);
+  await page.locator(".presentation-viewer").screenshot({
+    path: "tmp/patient-lad-location-" + test.info().project.name + ".png",
+  });
+  await page.getByRole("button", { name: "Next slide" }).click();
+  await expect(page.locator('[data-focus-area="mitral"]')).toBeVisible();
+  await page.getByRole("button", { name: "Next slide" }).click();
+  await expect(page.locator("svg.clinical-scene")).toHaveCount(0);
+  await expect(page.locator(".unsupported-patient-visual")).toBeVisible();
   await page.getByLabel("Choose language").selectOption("he");
-  await expect(page.getByRole("button", { name: "הצגת מילוי" })).toBeVisible();
-  await page.getByRole("button", { name: "שקף הבא" }).click();
-  await expect(svg).toHaveCount(1);
+  await expect(
+    page.getByText("להצגה בהנחיית הרופא במהלך הייעוץ", { exact: true }),
+  ).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+  await owner.dispose();
+});
+
+test("a symptom-only saved summary cannot create an assumed patient heart diagram", async ({
+  playwright,
+}) => {
+  const owner = await playwright.request.newContext({
+    baseURL: origin,
+    storageState: "tmp/owner-auth.json",
+  });
+  const card = await (
+    await owner.post("/api/clinic/appointments", {
+      headers,
+      data: {
+        mode: "clinic",
+        patientLabel: "Unsupported visual " + test.info().project.name,
+      },
+    })
+  ).json();
+  const id = card.appointment.id,
+    endpoint = "/api/clinic/appointments/" + id;
+  const upload = await owner.post(endpoint + "/documents", {
+    headers,
+    multipart: {
+      file: {
+        name: "referral.pdf",
+        mimeType: "application/pdf",
+        buffer: fs.readFileSync(fixture),
+      },
+    },
+  });
+  expect(upload.status()).toBe(201);
+  expect(
+    (
+      await owner.post(endpoint + "/submit", {
+        headers,
+        data: { confirmed: true },
+      })
+    ).status(),
+  ).toBe(200);
+  await expect
+    .poll(
+      async () =>
+        (await (await owner.get(endpoint + "/analysis")).json()).analysis
+          ?.status,
+      { timeout: 25000 },
+    )
+    .toBe("ready");
+  const create = await owner.post(endpoint + "/analysis", {
+    headers,
+    data: { action: "create_presentation" },
+  });
+  expect(create.status()).toBe(409);
+  expect(
+    (await (await owner.get(endpoint + "/analysis")).json()).presentation,
+  ).toBeNull();
   await owner.dispose();
 });

@@ -241,3 +241,91 @@ test("illustration valves gate filling and ejection; flow stays forward and acce
   assert.ok(lumenRadius(310, 1) > lumenRadius(310, 0));
   assert.ok(lumenRadius(310, 1) < 42); // Plaque remains after the mesh expands.
 });
+
+const focusJS = ts.transpileModule(
+  fs.readFileSync("src/lib/clinical/presentation-focus.ts", "utf8"),
+  {
+    compilerOptions: {
+      module: ts.ModuleKind.ES2022,
+      target: ts.ScriptTarget.ES2022,
+    },
+  },
+).outputText;
+const { resolveVisualFinding } = await import(
+  "data:text/javascript;base64," + Buffer.from(focusJS).toString("base64")
+);
+test("patient visuals require cited support and never infer current stenosis from historical PCI", () => {
+  const source = {
+    document_id: "doc",
+    filename: "test.pdf",
+    pages: 1,
+    sha256: "test",
+  };
+  const fact = (text, quote) => ({
+    text: { he: text, en: text },
+    date: null,
+    refs: [{ document_id: "doc", page: 1, quote }],
+  });
+  const slide = (kind, bullets) => ({
+    kind,
+    title: { he: "Test", en: "Test" },
+    explanation: { he: "Test", en: "Test" },
+    bullets,
+    key_value: null,
+  });
+  const weak = fact(
+    "Reduced left ventricular systolic function",
+    "הרחבה קלה של חדר שמאל וירידה בתפקוד הסיסטולי.",
+  );
+  assert.equal(
+    resolveVisualFinding(slide("pumping", [weak]), [source]).mode,
+    "comparison",
+  );
+  assert.equal(
+    resolveVisualFinding(
+      slide("pumping", [
+        fact(
+          "Suspected reduced LV function",
+          "Reduced LV function cannot be confirmed",
+        ),
+      ]),
+      [source],
+    ),
+    null,
+  );
+  assert.equal(
+    resolveVisualFinding(
+      slide("pumping", [
+        {
+          ...weak,
+          refs: [
+            { document_id: "other", page: 1, quote: "Reduced LV function" },
+          ],
+        },
+      ]),
+      [source],
+    ),
+    null,
+  );
+  const past = resolveVisualFinding(
+    slide("stent", [fact("Prior LAD PCI (historical)", "LAD PCI in 2018")]),
+    [source],
+  );
+  assert.equal(past.area, "lad");
+  assert.equal(past.mode, "location");
+  assert.equal(past.historical, true);
+  assert.equal(
+    resolveVisualFinding(
+      slide("valve", [fact("Mitral stenosis", "Aortic stenosis")]),
+      [source],
+    ),
+    null,
+  );
+  assert.equal(
+    resolveVisualFinding(
+      slide("valve", [fact("Mitral stenosis", "Mitral stenosis")]),
+      [source],
+    ).area,
+    "mitral",
+  );
+});

@@ -16,32 +16,33 @@ import {
   useReducedMotion,
 } from "./use-illustration-motion";
 import type { PresentationRecord } from "@/lib/clinical/types";
+import { resolveVisualFinding } from "@/lib/clinical/presentation-focus";
+import { cardiacCycle } from "@/lib/clinical/illustration-motion";
 export function PresentationViewer({ record }: { record: PresentationRecord }) {
   const { language, t } = useLanguage();
   const openDocument = useDocumentPreview();
   const [index, setIndex] = useState(0),
     [motion, setMotion] = useState(true),
     [slow, setSlow] = useState(false),
-    [intervention, setIntervention] = useState(false);
+    [view, setView] = useState<"comparison" | "area">("comparison");
   const container = useRef<HTMLDivElement>(null);
   const slide = record.content.slides[index];
   const count = record.content.slides.length;
   const reducedMotion = useReducedMotion();
+  const finding = resolveVisualFinding(slide, record.content.sources);
+  const canAnimate = finding?.mode === "comparison";
   const { progress, seek } = useIllustrationMotion(
-    motion && !reducedMotion && slide.kind !== "care",
+    motion && !reducedMotion && canAnimate,
     slow ? 0.5 : 1,
   );
-  const cardiac =
-    slide.kind === "pumping" ||
-    slide.kind === "valve" ||
-    slide.kind === "rhythm";
+  const cardiac = canAnimate;
   function inspectPhase(value: number) {
     setMotion(false);
     seek(value);
   }
   function move(next: number) {
     setIndex(next);
-    setIntervention(false);
+    setView("comparison");
     seek(0.16);
   }
   async function fullscreen() {
@@ -64,9 +65,25 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
       </div>
       <div className="presentation-stage">
         <div className="presentation-narrative">
-          <span className="eyebrow">{t("הסבר לשיחה עם הרופא")}</span>
+          <span className="eyebrow">
+            {t("להצגה בהנחיית הרופא במהלך הייעוץ")}
+          </span>
           <h3>{slide.title[language]}</h3>
-          <p>{slide.explanation[language]}</p>
+          {finding && (
+            <div className="case-finding-preview">
+              <span>
+                {finding.historical
+                  ? t("תיעוד היסטורי")
+                  : t("הממצא המתועד בתיק")}
+              </span>
+              <p>{finding.fact.text[language]}</p>
+              {finding.fact.date && <time>{finding.fact.date}</time>}
+            </div>
+          )}
+          <details className="presentation-mechanism-detail">
+            <summary>{t("הסבר נוסף לעיון הרופא")}</summary>
+            <p>{slide.explanation[language]}</p>
+          </details>
           {slide.key_value && (
             <div className="recorded-measurement">
               <span>{t("נתון מתועד במסמכים")}</span>
@@ -75,7 +92,7 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
           )}
         </div>
         <div className="presentation-graphic">
-          {slide.kind !== "care" && (
+          {canAnimate && (
             <>
               <div className="mechanism-controls">
                 <button
@@ -111,11 +128,121 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
               )}
             </>
           )}
-          <ClinicalScene
-            kind={slide.kind}
-            progress={progress}
-            intervention={intervention}
-          />
+          {slide.kind === "care" ? (
+            <ClinicalScene kind="care" progress={0} intervention={false} />
+          ) : finding ? (
+            <>
+              {finding.mode === "comparison" && (
+                <div
+                  className="patient-visual-switch"
+                  role="group"
+                  aria-label={t("תצוגת הממצא")}
+                >
+                  <button
+                    aria-pressed={view === "comparison"}
+                    onClick={() => setView("comparison")}
+                  >
+                    {t("השוואה לתפקוד תקין")}
+                  </button>
+                  <button
+                    aria-pressed={view === "area"}
+                    onClick={() => setView("area")}
+                  >
+                    {t("סימון האזור המתועד")}
+                  </button>
+                </div>
+              )}
+              {finding.mode === "comparison" && view === "comparison" ? (
+                <div className="patient-heart-comparison">
+                  <section data-view="reference">
+                    <h4>{t("תפקוד תקין — תרשים ייחוס")}</h4>
+                    <ClinicalScene
+                      kind="pumping"
+                      progress={progress}
+                      intervention={false}
+                      compact
+                    />
+                  </section>
+                  <section data-view="patient">
+                    <h4>{t("הממצא המתועד אצל המטופל")}</h4>
+                    <ClinicalScene
+                      kind="pumping"
+                      progress={progress}
+                      intervention={false}
+                      focus={finding.area}
+                      patient
+                      compact
+                    />
+                  </section>
+                </div>
+              ) : (
+                <div className="patient-area-view" data-view="patient">
+                  <ClinicalScene
+                    kind={slide.kind}
+                    progress={canAnimate ? progress : 0.4}
+                    intervention={false}
+                    focus={finding.area}
+                    patient={canAnimate}
+                    locationOnly={!canAnimate}
+                    compact
+                  />
+                </div>
+              )}
+              <div className="patient-visual-caption">
+                <strong>
+                  {t(
+                    finding.area === "lv"
+                      ? "החדר השמאלי"
+                      : finding.area === "lad"
+                        ? "העורק הקדמי היורד (LAD)"
+                        : finding.area === "rca"
+                          ? "העורק הכלילי הימני (RCA)"
+                          : finding.area === "lcx"
+                            ? "העורק העוקף (LCX)"
+                            : finding.area === "mitral"
+                              ? "המסתם המיטרלי"
+                              : finding.area === "aortic"
+                                ? "מסתם אבי העורקים"
+                                : "העליות",
+                  )}
+                </strong>
+                <p>
+                  {canAnimate
+                    ? t(
+                        "התנועה מדגימה את הירידה המתועדת בתפקוד באופן איכותני; היא אינה חישוב של מקטע הפליטה או שחזור אנטומי.",
+                      )
+                    : finding.historical
+                      ? t(
+                          "הסימון מזהה אזור שהוזכר בתיעוד ההיסטורי. הוא אינו מציג היצרות או פגיעה נוכחית שלא תועדה.",
+                        )
+                      : t(
+                          "הסימון מזהה את האזור שצוין במקור. חומרת הפגיעה והגאומטריה אינן מוסקות מהתרשים.",
+                        )}
+                </p>
+                {canAnimate && (
+                  <span className="mechanism-phase">
+                    {t(
+                      cardiacCycle(progress).phase === "filling"
+                        ? "מילוי החדר"
+                        : cardiacCycle(progress).phase === "ejection"
+                          ? "התכווצות ופליטה"
+                          : cardiacCycle(progress).phase === "contraction"
+                            ? "תחילת ההתכווצות"
+                            : "הרפיה",
+                    )}
+                  </span>
+                )}
+              </div>
+            </>
+          ) : (
+            <div className="unsupported-patient-visual">
+              <p>
+                {t(
+                  "לא ניתן למפות בביטחון את הממצאים השמורים לתרשים נתמך. הרופא יכול לעיין במקורות; לא מוצגת פגיעה משוערת.",
+                )}
+              </p>
+            </div>
+          )}{" "}
           {cardiac && (
             <div className="mechanism-inspect">
               <button onClick={() => inspectPhase(0.2)}>
@@ -137,14 +264,6 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
         ))}
       </div>
       <div className="presentation-controls">
-        {slide.kind === "stent" && (
-          <button
-            className="text-button"
-            onClick={() => setIntervention(!intervention)}
-          >
-            {intervention ? t("המחשת היצרות") : t("המחשת תמיכת תומכן")}
-          </button>
-        )}
         <div className="slide-navigation">
           <button
             className="icon-button"
@@ -196,7 +315,7 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
       </div>
       <p className="presentation-disclaimer">
         {t(
-          "המחשה לימודית המבוססת על המסמכים. אינה שחזור אנטומי, מדידת זרימה או תחזית טיפול. הרופא מאשר את ההסבר ואת בחירת הטיפול.",
+          "מצגת לעיון הרופא ולהצגה במהלך הייעוץ לפי שיקול דעתו. הממצאים והסימונים נשענים על המקורות המצוטטים; התרשימים סכמטיים ודורשים אימות קליני.",
         )}
       </p>
     </div>
