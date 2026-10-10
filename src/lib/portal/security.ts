@@ -185,6 +185,7 @@ export async function requirePatient() {
   if (
     !appointment ||
     appointment.revoked_at ||
+    appointment.intake_mode === "clinic" ||
     new Date(appointment.expires_at).getTime() <= Date.now()
   )
     throw new PortalError(
@@ -209,6 +210,7 @@ export function appointmentView(
   return {
     id: a.id,
     patient_label: a.patient_label,
+    intake_mode: a.intake_mode || "invitation",
     appointment_at: a.appointment_at,
     status: a.status,
     expires_at: a.expires_at,

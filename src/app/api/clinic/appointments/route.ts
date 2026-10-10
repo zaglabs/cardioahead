@@ -35,6 +35,10 @@ export async function POST(request: Request) {
     sameOrigin(request);
     const staff = await requireStaff();
     const input = await body(request);
+    const mode = input.mode || "invitation";
+    if (mode !== "invitation" && mode !== "clinic")
+      throw new PortalError(400, "BAD_ACTION", "בקשה לא תקינה.");
+    const manual = mode === "clinic";
     const label = text(input.patientLabel, 100);
     const language = input.language ?? "he";
     if (language !== "he" && language !== "en")
@@ -61,13 +65,16 @@ export async function POST(request: Request) {
       token_hash: tokenHash,
       pin_digest: pinDigest(tokenHash, code),
       expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-      revoked_at: null,
+      ...(manual ? { intake_mode: "clinic" as const } : {}),
+      revoked_at: manual ? new Date().toISOString() : null,
       failed_attempts: 0,
       created_by: staff.id,
       created_at: new Date().toISOString(),
       submitted_at: null,
     };
     await getStore().createAppointment(appointment);
+    if (manual)
+      return json({ appointment: appointmentView(appointment, []) }, 201);
     return json(
       {
         appointment: appointmentView(appointment, []),

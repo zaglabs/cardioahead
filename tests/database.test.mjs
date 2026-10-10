@@ -554,3 +554,129 @@ test("clinical records serialize analysis and presentation creation and reject n
     await db.close();
   }
 });
+
+test("clinic intake bypasses invitation expiry only for active staff and locks uploaded sources on submission", async () => {
+  const db = new PGlite();
+  try {
+    await db.exec(
+      "create role anon;create role authenticated;create role service_role;create schema auth;create table auth.users(id uuid primary key);create schema storage;create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);",
+    );
+    for (const file of [
+      "202610040001_portal.sql",
+      "202610040002_staff_otp.sql",
+      "202610090003_clinical_records.sql",
+      "202610100004_clinic_intake.sql",
+    ])
+      await db.exec(
+        fs.readFileSync(
+          path.join(process.cwd(), "supabase/migrations", file),
+          "utf8",
+        ),
+      );
+    const actor = randomUUID(),
+      suspended = randomUUID(),
+      card = randomUUID();
+    await db.query(
+      "insert into public.clinic_staff(id,email,role,status) values($1,'professor@test.invalid','professor','active'),($2,'suspended@test.invalid','secretary','suspended')",
+      [actor, suspended],
+    );
+    await db.query(
+      "insert into public.appointments(id,patient_label,token_hash,pin_digest,expires_at,revoked_at,created_by,intake_mode) values($1,'fictional manual','private-token','pin',now()-interval '1 day',now(),$2,'clinic')",
+      [card, actor],
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.verify_patient_pin('private-token','pin','patient') ok",
+        )
+      ).rows[0].ok,
+      false,
+    );
+    assert.equal(
+      (
+        await db.query("select public.submit_clinic_appointment($1,$2) ok", [
+          card,
+          actor,
+        ])
+      ).rows[0].ok,
+      false,
+    );
+    const record = {
+      id: randomUUID(),
+      appointment_id: card,
+      filename: "fixture.pdf",
+      storage_path: card + "/fixture.pdf",
+      sha256: "hash",
+      bytes: 1024,
+      created_at: new Date().toISOString(),
+    };
+    await assert.rejects(() =>
+      db.query("select public.attach_clinic_document($1,$2)", [
+        JSON.stringify(record),
+        suspended,
+      ]),
+    );
+    await assert.rejects(() =>
+      db.query("select public.attach_document($1)", [JSON.stringify(record)]),
+    );
+    await db.query("select public.attach_clinic_document($1,$2)", [
+      JSON.stringify(record),
+      actor,
+    ]);
+    await assert.rejects(() =>
+      db.query("select public.attach_clinic_document($1,$2)", [
+        JSON.stringify({
+          ...record,
+          id: randomUUID(),
+          storage_path: card + "/duplicate.pdf",
+        }),
+        actor,
+      ]),
+    );
+    assert.equal(
+      (
+        await db.query("select public.submit_clinic_appointment($1,$2) ok", [
+          card,
+          actor,
+        ])
+      ).rows[0].ok,
+      true,
+    );
+    await assert.rejects(() =>
+      db.query("select public.attach_clinic_document($1,$2)", [
+        JSON.stringify({
+          ...record,
+          id: randomUUID(),
+          sha256: "other",
+          storage_path: card + "/other.pdf",
+        }),
+        actor,
+      ]),
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select public.claim_visit_analysis($1,'hash','[]',$2) ok",
+          [card, randomUUID()],
+        )
+      ).rows[0].ok,
+      true,
+    );
+    assert.equal(
+      (
+        await db.query(
+          "select count(*)::int n from public.audit_events where event='staff_document_uploaded' and actor_id=$1",
+          [actor],
+        )
+      ).rows[0].n,
+      1,
+    );
+    await db.exec("set role anon");
+    await assert.rejects(() =>
+      db.query("select public.submit_clinic_appointment($1,$2)", [card, actor]),
+    );
+    await assert.rejects(() => db.query("select * from public.documents"));
+  } finally {
+    await db.close();
+  }
+});

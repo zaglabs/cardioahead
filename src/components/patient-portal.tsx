@@ -1,6 +1,7 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
-import { useRef, useState } from "react";
+import { useState } from "react";
+import { DocumentDropzone } from "./document-dropzone";
 import Link from "next/link";
 import { HeartIllustration } from "./heart-illustration";
 import {
@@ -8,7 +9,6 @@ import {
   Check,
   CheckCircle2,
   FileText,
-  FolderOpen,
   LockKeyhole,
   CalendarDays,
   LogOut,
@@ -35,7 +35,6 @@ export function PatientPortal({
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [step, setStep] = useState(0);
-  const fileInput = useRef<HTMLInputElement>(null);
   async function api(url: string, init?: RequestInit) {
     const response = await fetch(url, init);
     const data = await response.json();
@@ -103,7 +102,6 @@ export function PatientPortal({
       }
     }
     setBusy(false);
-    if (fileInput.current) fileInput.current.value = "";
   }
   async function finish() {
     setBusy(true);
@@ -342,39 +340,10 @@ export function PatientPortal({
                 )}
               </p>
             </div>
-            <div
-              className="demo-upload-area"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault();
-                if (!busy) void upload(Array.from(e.dataTransfer.files));
-              }}
-            >
-              <FolderOpen size={30} />
-              <strong>{t("בחירת מסמכים מהמכשיר")}</strong>
-              <span>{t("PDF בלבד · עד 4 MB לקובץ · עד 10 מסמכים")}</span>
-              <button
-                type="button"
-                className="button button-dark"
-                onClick={() => fileInput.current?.click()}
-                disabled={busy}
-              >
-                {busy ? t("מעלים מסמכים…") : t("בחרו קבצים")}
-                <FileText size={17} />
-              </button>
-              <input
-                ref={fileInput}
-                className="file-input"
-                type="file"
-                accept=".pdf,application/pdf"
-                multiple
-                aria-label={t("בחירת קובצי PDF")}
-                disabled={busy}
-                onChange={(e) => {
-                  if (e.target.files) void upload(Array.from(e.target.files));
-                }}
-              />
-            </div>
+            <DocumentDropzone
+              busy={busy}
+              onFiles={(files) => void upload(files)}
+            />
             <div className="document-options" aria-live="polite">
               {appointment.documents.map((d) => (
                 <div className="document-option" key={d.id}>

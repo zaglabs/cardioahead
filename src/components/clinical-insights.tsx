@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "./language-provider";
 import { PresentationViewer } from "./presentation-viewer";
+import { useDocumentPreview } from "./document-preview";
 import type { AppointmentView, Staff } from "@/lib/portal/types";
 import type {
   AnalysisRecord,
@@ -36,6 +37,7 @@ function EvidenceFact({
   sources: ClinicalSource[];
 }) {
   const { language, t } = useLanguage();
+  const openDocument = useDocumentPreview();
   return (
     <li className="clinical-fact">
       <p>{fact.text[language]}</p>
@@ -50,8 +52,16 @@ function EvidenceFact({
               href={
                 "/api/clinic/documents/" + ref.document_id + "#page=" + ref.page
               }
-              target="_blank"
-              rel="noreferrer"
+              onClick={(event) => {
+                event.preventDefault();
+                openDocument({
+                  id: ref.document_id,
+                  filename:
+                    sources.find((s) => s.document_id === ref.document_id)
+                      ?.filename || t("מסמך רפואי"),
+                  page: ref.page,
+                });
+              }}
             >
               {sources.find((s) => s.document_id === ref.document_id)?.filename}{" "}
               · {t("עמוד")} {ref.page}
@@ -73,6 +83,7 @@ export function ClinicalInsights({
   mode: "report" | "presentation";
 }) {
   const { language, locale, t } = useLanguage();
+  const openDocument = useDocumentPreview();
   const [data, setData] = useState<Response | null>(null),
     [error, setError] = useState(""),
     [busy, setBusy] = useState(false);
@@ -143,7 +154,9 @@ export function ClinicalInsights({
     appointment.status !== "invited" &&
     !summary &&
     !error &&
-    (!data.analysis || data.analysis.status === "queued" || data.analysis.status === "generating"),
+    (!data.analysis ||
+      data.analysis.status === "queued" ||
+      data.analysis.status === "generating"),
   );
   const queued = data?.analysis?.status !== "generating";
   return (
@@ -161,14 +174,20 @@ export function ClinicalInsights({
       )}
       {data && !summary && (
         <div className="empty-report" aria-busy={preparing}>
-          <Heart size={30} className={preparing ? "summary-heart-loader" : undefined} aria-hidden="true" />
+          <Heart
+            size={30}
+            className={preparing ? "summary-heart-loader" : undefined}
+            aria-hidden="true"
+          />
           <h3 aria-live="polite">
             {data.analysis?.status === "failed"
               ? t("הכנת הסיכום נכשלה.")
               : appointment.status === "invited"
                 ? t("ממתינים לשליחת המסמכים.")
                 : data.configured
-                  ? queued ? t("הסיכום ממתין לתחילת העיבוד.") : t("מכינים את הסיכום מהמסמכים.")
+                  ? queued
+                    ? t("הסיכום ממתין לתחילת העיבוד.")
+                    : t("מכינים את הסיכום מהמסמכים.")
                   : t("חיבור קורא המסמכים נדרש.")}
           </h3>
           <p>
@@ -177,9 +196,11 @@ export function ClinicalInsights({
               : appointment.status === "invited"
                 ? t("הסיכום יוכן לאחר שהמטופל ישלח את המסמכים למרפאה.")
                 : data.configured
-                  ? queued ? t("הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.") : t(
-                      "הקבצים נקראים ונשמרת טיוטה עם הפניות למקורות. אין צורך להישאר בעמוד.",
-                    )
+                  ? queued
+                    ? t("הבקשה התקבלה ותתחיל בקרוב. המצב מתעדכן אוטומטית.")
+                    : t(
+                        "הקבצים נקראים ונשמרת טיוטה עם הפניות למקורות. אין צורך להישאר בעמוד.",
+                      )
                   : t("עיבוד המסמכים באמצעות שירות AI ממתין לחיבור ולאישור.")}
           </p>
           {data.analysis?.status === "failed" && (
@@ -380,8 +401,13 @@ export function ClinicalInsights({
             <a
               key={source.document_id}
               href={"/api/clinic/documents/" + source.document_id}
-              target="_blank"
-              rel="noreferrer"
+              onClick={(event) => {
+                event.preventDefault();
+                openDocument({
+                  id: source.document_id,
+                  filename: source.filename,
+                });
+              }}
             >
               <FileText size={16} />
               <span dir="auto">{source.filename}</span>

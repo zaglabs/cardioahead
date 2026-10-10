@@ -4,6 +4,11 @@ import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ClinicalInsights } from "./clinical-insights";
+import {
+  DocumentPreviewProvider,
+  useDocumentPreview,
+} from "./document-preview";
+import { ClinicDocumentUpload } from "./clinic-document-upload";
 import { isAdmin } from "@/lib/portal/staff-access";
 import {
   CalendarDays,
@@ -17,7 +22,8 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  ArrowDownToLine,
+  Eye,
+  Plus,
   X,
   Copy,
 } from "lucide-react";
@@ -27,7 +33,17 @@ const labels = {
   submitted: "התקבל במרפאה",
   reviewed: "נבדק",
 } as const;
-export function ClinicPortal({
+export function ClinicPortal(props: {
+  staff: Staff;
+  initialAppointments: AppointmentView[];
+}) {
+  return (
+    <DocumentPreviewProvider>
+      <ClinicWorkspace {...props} />
+    </DocumentPreviewProvider>
+  );
+}
+function ClinicWorkspace({
   staff,
   initialAppointments,
 }: {
@@ -35,6 +51,10 @@ export function ClinicPortal({
   initialAppointments: AppointmentView[];
 }) {
   const { t, locale } = useLanguage();
+  const openDocument = useDocumentPreview();
+  const [formMode, setFormMode] = useState<"invitation" | "clinic">(
+    "invitation",
+  );
 
   const [appointments, setAppointments] =
     useState<AppointmentView[]>(initialAppointments);
@@ -100,11 +120,15 @@ export function ClinicPortal({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           patientLabel: name,
+          mode: formMode,
           language: invitationLanguage,
           appointmentAt: date ? new Date(date).toISOString() : null,
         }),
       });
-      setInvitation(data);
+      if (formMode === "clinic") {
+        setShowForm(false);
+        setTab("documents");
+      } else setInvitation(data);
       setSelected(data.appointment.id);
       await refresh();
     } catch (e) {
@@ -160,6 +184,13 @@ export function ClinicPortal({
       setCopied(t("אפשר לסמן ולהעתיק את הטקסט ידנית."));
     }
   }
+  function statusLabel(a: AppointmentView) {
+    return a.intake_mode === "clinic" && a.status === "invited"
+      ? t("טיוטה במרפאה")
+      : a.intake_mode !== "clinic" && a.revoked_at
+        ? t("הגישה בוטלה")
+        : t(labels[a.status]);
+  }
   const filtered = appointments.filter(
     (a) =>
       (filter === "all" || a.status === filter) &&
@@ -206,6 +237,7 @@ export function ClinicPortal({
             <button
               className="button button-dark button-small"
               onClick={() => {
+                setFormMode("invitation");
                 setShowForm(!showForm);
                 setInvitation(null);
                 setCopied("");
@@ -214,6 +246,19 @@ export function ClinicPortal({
             >
               <Link2 size={16} />
               {t("הזמנה חדשה")}
+            </button>
+            <button
+              className="button button-outline button-small"
+              onClick={() => {
+                setFormMode("clinic");
+                setShowForm(true);
+                setInvitation(null);
+                setName("");
+                setCopied("");
+              }}
+            >
+              <Plus size={17} />
+              {t("תיק מטופל חדש")}
             </button>
             <button
               className="icon-button"
@@ -236,7 +281,11 @@ export function ClinicPortal({
         {showForm && (
           <section className="invitation-preview">
             <div>
-              <strong>{t("הזמנה אישית למטופל")}</strong>
+              <strong>
+                {formMode === "clinic"
+                  ? t("פתיחת תיק מטופל במרפאה")
+                  : t("הזמנה אישית למטופל")}
+              </strong>
               <button
                 className="icon-button"
                 onClick={() => setShowForm(false)}
@@ -266,22 +315,28 @@ export function ClinicPortal({
                     onChange={(e) => setDate(e.target.value)}
                   />
                 </label>
-                <label>
-                  {t("שפת ההזמנה")}
-                  <select
-                    value={invitationLanguage}
-                    onChange={(e) =>
-                      setInvitationLanguage(
-                        e.target.value === "en" ? "en" : "he",
-                      )
-                    }
-                  >
-                    <option value="he">עברית</option>
-                    <option value="en">English</option>
-                  </select>
-                </label>
+                {formMode === "invitation" && (
+                  <label>
+                    {t("שפת ההזמנה")}
+                    <select
+                      value={invitationLanguage}
+                      onChange={(e) =>
+                        setInvitationLanguage(
+                          e.target.value === "en" ? "en" : "he",
+                        )
+                      }
+                    >
+                      <option value="he">עברית</option>
+                      <option value="en">English</option>
+                    </select>
+                  </label>
+                )}
                 <button className="button button-dark" disabled={busy}>
-                  {busy ? t("יוצרים הזמנה…") : t("יצירת קישור וקוד גישה")}
+                  {busy
+                    ? t("יוצרים הזמנה…")
+                    : formMode === "clinic"
+                      ? t("פתיחת תיק")
+                      : t("יצירת קישור וקוד גישה")}
                   <Link2 size={17} />
                 </button>
               </form>
@@ -412,7 +467,7 @@ export function ClinicPortal({
                         (a.status === "submitted" ? "badge-ready" : "")
                       }
                     >
-                      {a.revoked_at ? t("הגישה בוטלה") : t(labels[a.status])}
+                      {statusLabel(a)}
                     </span>
                   </span>
                 </button>
@@ -443,7 +498,7 @@ export function ClinicPortal({
                         : t("טרם נקבע מועד ביקור")}
                     </span>
                   </div>
-                  <span className="badge">{t(labels[active.status])}</span>
+                  <span className="badge">{statusLabel(active)}</span>
                 </div>
                 <div
                   className="detail-tabs"
@@ -483,19 +538,22 @@ export function ClinicPortal({
                   {tab === "documents" ? (
                     <>
                       <p className="form-note">
-                        {active.status === "invited"
-                          ? t(
-                              "המטופל עדיין מכין את התיק. המסמכים שכבר נשמרו מופיעים כאן.",
-                            )
-                          : t("המסמכים זמינים לעיון צוות המרפאה.")}
+                        {active.intake_mode === "clinic"
+                          ? t("תיק זה נפתח במרפאה, ללא קישור הזמנה למטופל.")
+                          : active.status === "invited"
+                            ? t(
+                                "המטופל עדיין מכין את התיק. המסמכים שכבר נשמרו מופיעים כאן.",
+                              )
+                            : t("המסמכים זמינים לעיון צוות המרפאה.")}
                       </p>
                       <div className="document-options">
                         {active.documents.map((d) => (
-                          <a
+                          <button
                             className="document-preview-row"
-                            target="_blank"
-                            rel="noreferrer"
-                            href={"/api/clinic/documents/" + d.id}
+                            type="button"
+                            onClick={() =>
+                              openDocument({ id: d.id, filename: d.filename })
+                            }
                             key={d.id}
                           >
                             <FileText size={21} />
@@ -508,19 +566,28 @@ export function ClinicPortal({
                                 )}
                               </small>
                             </div>
-                            <ArrowDownToLine size={18} />
-                          </a>
+                            <Eye size={18} />
+                          </button>
                         ))}
                       </div>
-                      {!active.documents.length && (
-                        <div className="empty-report">
-                          <FileText size={30} />
-                          <h3>{t("ממתינים למסמכים.")}</h3>
-                          <p>
-                            {t("הקבצים שהמטופל יעלה דרך ההזמנה יופיעו כאן.")}
-                          </p>
-                        </div>
+                      {active.status === "invited" && (
+                        <ClinicDocumentUpload
+                          key={active.id}
+                          appointment={active}
+                          onUploaded={refresh}
+                          onPrepared={() => setTab("report")}
+                        />
                       )}
+                      {!active.documents.length &&
+                        active.status !== "invited" && (
+                          <div className="empty-report">
+                            <FileText size={30} />
+                            <h3>{t("ממתינים למסמכים.")}</h3>
+                            <p>
+                              {t("הקבצים שהמטופל יעלה דרך ההזמנה יופיעו כאן.")}
+                            </p>
+                          </div>
+                        )}
                     </>
                   ) : (
                     <ClinicalInsights
@@ -541,7 +608,7 @@ export function ClinicPortal({
                         <Check size={16} />
                       </button>
                     )}
-                    {!active.revoked_at && (
+                    {active.intake_mode !== "clinic" && !active.revoked_at && (
                       <button
                         className="text-button"
                         onClick={() => void update("revoke")}
@@ -550,7 +617,7 @@ export function ClinicPortal({
                         {t("ביטול קישור הגישה")}
                       </button>
                     )}
-                    {active.revoked_at && (
+                    {active.intake_mode !== "clinic" && active.revoked_at && (
                       <span className="form-note">
                         {t("קישור הגישה בוטל. המסמכים נשמרו בתיק.")}
                       </span>

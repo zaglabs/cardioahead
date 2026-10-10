@@ -2,6 +2,7 @@ import "server-only";
 import { createClient } from "@supabase/supabase-js";
 import { BUCKET, localTestMode, supabaseServerKey } from "./config";
 import { localStore } from "./local-store";
+import { PortalError } from "./security";
 import type {
   Appointment,
   DocumentRecord,
@@ -27,6 +28,12 @@ export interface PortalStore {
   documents(appointmentId: string): Promise<DocumentRecord[]>;
   document(id: string): Promise<DocumentRecord | null>;
   saveDocument(record: DocumentRecord, bytes: Buffer): Promise<void>;
+  saveClinicDocument(
+    record: DocumentRecord,
+    bytes: Buffer,
+    actor: string,
+  ): Promise<void>;
+  submitClinic(id: string, actor: string): Promise<boolean>;
   readDocument(record: DocumentRecord): Promise<Buffer>;
   submit(id: string): Promise<boolean>;
   revoke(id: string): Promise<void>;
@@ -75,7 +82,18 @@ export function getStore(): PortalStore {
       ) as Appointment[];
     },
     async createAppointment(value) {
-      checked(await db.from("appointments").insert(value));
+      const result = await db.from("appointments").insert(value);
+      if (
+        result.error &&
+        value.intake_mode === "clinic" &&
+        ["42703", "PGRST204"].includes(result.error.code)
+      )
+        throw new PortalError(
+          503,
+          "CLINIC_MIGRATION_REQUIRED",
+          "יש להחיל את עדכון מסד הנתונים לקליטת מסמכים במרפאה.",
+        );
+      checked(result);
     },
     async verifyPatient(tokenHash, digest, session) {
       return (
@@ -132,6 +150,45 @@ export function getStore(): PortalStore {
         await db.storage.from(BUCKET).remove([record.storage_path]);
         throw error;
       }
+    },
+    async saveClinicDocument(record, bytes, actor) {
+      checked(
+        await db.storage
+          .from(BUCKET)
+          .upload(record.storage_path, bytes, {
+            contentType: "application/pdf",
+            upsert: false,
+          }),
+      );
+      try {
+        const result = await db.rpc("attach_clinic_document", {
+          p_record: record,
+          p_actor: actor,
+        });
+        if (result.error?.code === "PGRST202" || result.error?.code === "42883")
+          throw new PortalError(
+            503,
+            "CLINIC_MIGRATION_REQUIRED",
+            "יש להחיל את עדכון מסד הנתונים לקליטת מסמכים במרפאה.",
+          );
+        checked(result);
+      } catch (error) {
+        await db.storage.from(BUCKET).remove([record.storage_path]);
+        throw error;
+      }
+    },
+    async submitClinic(id, actor) {
+      const result = await db.rpc("submit_clinic_appointment", {
+        p_id: id,
+        p_actor: actor,
+      });
+      if (result.error?.code === "PGRST202" || result.error?.code === "42883")
+        throw new PortalError(
+          503,
+          "CLINIC_MIGRATION_REQUIRED",
+          "יש להחיל את עדכון מסד הנתונים לקליטת מסמכים במרפאה.",
+        );
+      return checked(result) === true;
     },
     async readDocument(record) {
       const blob = checked(

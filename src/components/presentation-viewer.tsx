@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useLanguage } from "./language-provider";
 import { ClinicalScene } from "./clinical-scene";
+import { useDocumentPreview } from "./document-preview";
 import {
   useIllustrationMotion,
   useReducedMotion,
@@ -17,6 +18,7 @@ import {
 import type { PresentationRecord } from "@/lib/clinical/types";
 export function PresentationViewer({ record }: { record: PresentationRecord }) {
   const { language, t } = useLanguage();
+  const openDocument = useDocumentPreview();
   const [index, setIndex] = useState(0),
     [motion, setMotion] = useState(true),
     [slow, setSlow] = useState(false),
@@ -171,8 +173,17 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
               href={
                 "/api/clinic/documents/" + ref.document_id + "#page=" + ref.page
               }
-              target="_blank"
-              rel="noreferrer"
+              onClick={(event) => {
+                event.preventDefault();
+                openDocument({
+                  id: ref.document_id,
+                  filename:
+                    record.content.sources.find(
+                      (source) => source.document_id === ref.document_id,
+                    )?.filename || t("מסמך רפואי"),
+                  page: ref.page,
+                });
+              }}
             >
               {
                 record.content.sources.find(

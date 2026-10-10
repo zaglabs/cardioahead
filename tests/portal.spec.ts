@@ -165,8 +165,13 @@ test("clinic creates an invitation; patient uploads two PDFs; clinic retrieves i
     .locator(".document-preview-row")
     .filter({ hasText: "01-cardiology-referral-he.pdf" });
   await expect(fileLink).toBeVisible();
-  const documentUrl = await fileLink.getAttribute("href");
-  const response = await page.request.get(documentUrl!);
+  const received = page.waitForResponse(
+    (response) =>
+      response.url().includes("/api/clinic/documents/") &&
+      response.request().method() === "GET",
+  );
+  await fileLink.click();
+  const response = await received;
   expect(response.status()).toBe(200);
   expect(
     createHash("sha256")
@@ -174,6 +179,8 @@ test("clinic creates an invitation; patient uploads two PDFs; clinic retrieves i
       .digest("hex"),
   ).toBe(createHash("sha256").update(fs.readFileSync(fixture)).digest("hex"));
   expect(response.headers()["cache-control"]).toContain("no-store");
+  await expect(page.getByRole("dialog").locator("canvas")).toBeVisible();
+  await page.getByRole("button", { name: "סגירת המסמך" }).click();
   await page.getByRole("button", { name: "סימון כנבדק" }).click();
   await expect(
     page.locator(".case-detail").getByText("נבדק", { exact: true }),

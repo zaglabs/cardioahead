@@ -8,6 +8,7 @@ export type Staff = {
   created_at: string;
 };
 export type Appointment = {
+  intake_mode?: "invitation" | "clinic";
   id: string;
   patient_label: string;
   appointment_at: string | null;
@@ -53,6 +54,7 @@ export type AppointmentView = Pick<
   | "revoked_at"
   | "created_at"
   | "submitted_at"
+  | "intake_mode"
 > & { documents: DocumentView[] };
 export type DocumentView = Pick<
   DocumentRecord,

@@ -6,6 +6,7 @@ export default defineConfig([
   ...nextTs,
   globalIgnores([
     ".next/**",
+    "public/pdfjs/**",
     "out/**",
     "next-env.d.ts",
     "playwright-report/**",

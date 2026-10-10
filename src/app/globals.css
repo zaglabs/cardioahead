@@ -3431,3 +3431,53 @@ p {
 .presentation-viewer .mechanism-caption p { color: #d8e8d9; }
 .presentation-viewer .mechanism-caption small,
 .presentation-viewer .mechanism-motion-note { color: #c0d9ca; }
+.document-dropzone.dragging {
+  border-color: #466e52;
+  background: #e9f1df;
+  box-shadow: inset 0 0 0 2px #466e52;
+}
+.document-dropzone[aria-disabled="true"] { opacity: .7; }
+.clinic-upload { margin-block: 24px; }
+.clinic-upload h3 { font-size: 1.2rem; margin-bottom: 16px; }
+.clinic-upload .consent-check { margin-block: 20px; }
+button.document-preview-row { width: 100%; text-align: start; cursor: pointer; background: white; color: var(--ink); font: inherit; }
+button.document-preview-row:hover { background: #f1f5eb; }
+button.document-preview-row:focus-visible { outline: 3px solid #738e5b; outline-offset: 2px; }
+.document-lightbox {
+  width: min(1100px, calc(100vw - 40px));
+  height: min(920px, calc(100dvh - 40px));
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 1px solid #d2dccc;
+  border-radius: 16px;
+  box-shadow: 0 24px 90px #00000050;
+  background: #f6f8f3;
+  color: var(--ink);
+}
+.document-lightbox::backdrop { background: #06231dde; backdrop-filter: blur(5px); }
+.document-lightbox-shell { display: flex; flex-direction: column; height: 100%; min-width: 0; }
+.document-lightbox-header {
+  display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  padding: 12px 18px; border-bottom: 1px solid var(--line); background: white;
+}
+.document-lightbox-header h2 { font-size: 1.125rem; margin: 0; overflow-wrap: anywhere; min-width: 0; }
+.document-lightbox-header .icon-button { width: 44px; height: 44px; flex-shrink: 0; border: 1px solid var(--line); border-radius: 8px; }
+.pdf-toolbar {
+  display: flex; align-items: center; justify-content: center; flex-wrap: wrap; gap: 10px;
+  padding: 8px 14px; border-bottom: 1px solid var(--line); background: white; flex-shrink: 0; font-size: .9375rem;
+}
+.pdf-toolbar .icon-button { min-width: 40px; min-height: 40px; border: 1px solid var(--line); border-radius: 8px; }
+.pdf-toolbar button:disabled { opacity: .4; }
+.pdf-toolbar .text-button { font-size: .875rem; }
+.pdf-page-scroll { flex: 1; min-height: 0; overflow: auto; padding: 12px; background: #dfe5dd; direction: ltr; }
+.pdf-page-scroll canvas { display: block; margin-inline: auto; background: white; box-shadow: 0 2px 12px #213b2625; }
+.pdf-loading { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1; min-height: 120px; }
+.document-lightbox .form-error { margin: 20px; }
+@media (max-width: 680px) {
+  .document-lightbox { width: calc(100vw - 12px); height: calc(100dvh - 12px); border-radius: 10px; }
+  .document-lightbox-header { padding: 8px 10px; gap: 8px; }
+  .document-lightbox-header h2 { font-size: 1rem; }
+  .pdf-toolbar { gap: 6px; padding: 6px; }
+  .clinic-upload .demo-upload-area { padding-inline: 12px; }
+}

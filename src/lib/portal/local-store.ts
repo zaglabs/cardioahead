@@ -84,6 +84,39 @@ const owner: Staff = {
   status: "active",
   created_at: new Date().toISOString(),
 };
+const persistDocument = (
+  record: DocumentRecord,
+  bytes: Buffer,
+  actor?: string,
+) =>
+  localTransaction(async (s) => {
+    const a = s.appointments.find((a) => a.id === record.appointment_id);
+    if (actor && !s.staff.some((v) => v.id === actor && v.status === "active"))
+      throw new Error("STAFF_REQUIRED");
+    if (!a || (!actor && !active(a)) || a.status !== "invited")
+      throw new Error("UPLOAD_CLOSED");
+    const documents = s.documents.filter((d) => d.appointment_id === a.id);
+    if (
+      documents.length >= MAX_DOCUMENTS ||
+      documents.some((d) => d.sha256 === record.sha256)
+    )
+      throw new Error("DOCUMENT_LIMIT_OR_DUPLICATE");
+    const file = path.join(
+      /* turbopackIgnore: true */ root(),
+      record.storage_path,
+    );
+    await mkdir(path.dirname(file), { recursive: true });
+    await writeFile(file, bytes, { mode: 0o600, flag: "wx" });
+    s.documents.push(record);
+    s.audit.push({
+      event: actor ? "staff_document_uploaded" : "document_uploaded",
+      actor_id: actor,
+      appointment_id: a.id,
+      document_id: record.id,
+      at: new Date().toISOString(),
+    });
+  });
+
 export const localStore: PortalStore = {
   async staff(id) {
     return localTransaction((s) => s.staff.find((v) => v.id === id) || null);
@@ -100,7 +133,10 @@ export const localStore: PortalStore = {
     localTransaction((s) => {
       s.appointments.push(a);
       s.audit.push({
-        event: "invitation_created",
+        event:
+          a.intake_mode === "clinic"
+            ? "clinic_card_created"
+            : "invitation_created",
         appointment_id: a.id,
         actor_id: a.created_by,
         at: new Date().toISOString(),
@@ -140,30 +176,29 @@ export const localStore: PortalStore = {
     localTransaction((s) => s.documents.filter((d) => d.appointment_id === id)),
   document: (id) =>
     localTransaction((s) => s.documents.find((d) => d.id === id) || null),
-  saveDocument: (record, bytes) =>
-    localTransaction(async (s) => {
-      const a = s.appointments.find((a) => a.id === record.appointment_id);
-      if (!a || !active(a) || a.status !== "invited")
-        throw new Error("UPLOAD_CLOSED");
-      const documents = s.documents.filter((d) => d.appointment_id === a.id);
+  saveDocument: (record, bytes) => persistDocument(record, bytes),
+  saveClinicDocument: (record, bytes, actor) =>
+    persistDocument(record, bytes, actor),
+  submitClinic: (id, actor) =>
+    localTransaction((s) => {
+      if (!s.staff.some((v) => v.id === actor && v.status === "active"))
+        throw new Error("STAFF_REQUIRED");
+      const a = s.appointments.find((v) => v.id === id);
       if (
-        documents.length >= MAX_DOCUMENTS ||
-        documents.some((d) => d.sha256 === record.sha256)
+        !a ||
+        a.status !== "invited" ||
+        !s.documents.some((d) => d.appointment_id === id)
       )
-        throw new Error("DOCUMENT_LIMIT_OR_DUPLICATE");
-      const file = path.join(
-        /* turbopackIgnore: true */ root(),
-        record.storage_path,
-      );
-      await mkdir(path.dirname(file), { recursive: true });
-      await writeFile(file, bytes, { mode: 0o600, flag: "wx" });
-      s.documents.push(record);
+        return false;
+      a.status = "submitted";
+      a.submitted_at = new Date().toISOString();
       s.audit.push({
-        event: "document_uploaded",
-        appointment_id: a.id,
-        document_id: record.id,
-        at: new Date().toISOString(),
+        event: "staff_documents_submitted",
+        actor_id: actor,
+        appointment_id: id,
+        at: a.submitted_at,
       });
+      return true;
     }),
   async readDocument(record) {
     if (!localTestMode()) throw new Error("LOCAL_STORE_DISABLED");
