@@ -13,13 +13,13 @@ import {
   collectedCounts,
   clearCollectedRecords,
 } from "../scripts/clalit-import-state.mjs";
-const origin = "http://127.0.0.1:3184",
+const origin = "http://127.0.0.1:3185",
   token = "a".repeat(48);
 function call(
   path,
   {
     method = "POST",
-    host = "127.0.0.1:3184",
+    host = "127.0.0.1:3185",
     referer = origin,
     nonce = collectorState().nonce,
     body = { token },
@@ -50,6 +50,7 @@ function call(
   });
 }
 test("loopback pairing rejects cross-site requests and transfers only reviewed sources to the fixed destination; raw buffer clears on acceptance", async () => {
+  let remoteStatus = "awaiting_collection";
   const originalFetch = globalThis.fetch,
     sent = [];
   globalThis.fetch = async (url, options = {}) => {
@@ -68,7 +69,7 @@ test("loopback pairing rejects cross-site requests and transfers only reviewed s
               provider: "clalit",
               subject_scope: "self",
               patient_label: "Fictional owner card",
-              status: "awaiting_collection",
+              status: remoteStatus,
               claude_consent: true,
             },
       ),
@@ -76,7 +77,7 @@ test("loopback pairing rejects cross-site requests and transfers only reviewed s
     );
   };
   try {
-    await startImportBridge();
+    await startImportBridge(3185);
     const first = rememberMedicalRecord(
       "laboratory",
       ["FICTIONAL_VALUE: 7.3 mg/dL"],
@@ -148,6 +149,19 @@ test("loopback pairing rejects cross-site requests and transfers only reviewed s
       ["FICTIONAL_EXPIRED"],
       { record_reference: null, collection_date_text: null },
       "https://e-services.clalit.co.il/fictional",
+      false,
+    );
+    remoteStatus = "ready";
+    const completed = await call("/status");
+    assert.equal(JSON.parse(completed.text).target.status, "ready");
+    assert.equal(
+      collectedCounts().record_count,
+      1,
+      "Old ready connections cannot clear a newly collected source",
+    );
+    assert.equal(collectorState().import_status.status, "ready");
+    assert.equal(
+      Object.hasOwn(collectorState().import_status, "patient_label"),
       false,
     );
     collectorState().expires_at = Date.now() - 1;

@@ -10,7 +10,6 @@ import {
 } from "./clalit-import-state.mjs";
 const endpoint =
   "https://www.cardioahead.com/api/clinic/medical-imports/upload";
-const origin = "http://127.0.0.1:3184";
 function equal(a, b) {
   const left = Buffer.from(a || ""),
     right = Buffer.from(b || "");
@@ -41,17 +40,20 @@ function loading(){if(!document.getElementById('heart')){const heart=document.cr
 button.onclick=async()=>{inFlight=true;button.disabled=true;error.textContent='';try{const data=await call('/transfer',{token,source_ids:[...document.querySelectorAll('#manifest input:checked')].map(box=>box.value)});status.textContent=data.queued?'Source references received. Claude processing is starting.':'Source references saved; no AI processing requested.';if(data.queued)loading();}catch(reason){error.textContent=reason.message;}finally{inFlight=false;await refresh();}};void refresh();setInterval(refresh,5000);
 </script></body></html>`;
 }
-export async function startImportBridge() {
+export async function startImportBridge(port = 3184) {
+  if (!Number.isInteger(port) || port < 1024 || port > 65535)
+    throw new Error("INVALID_LOOPBACK_PORT");
+  const bridgeOrigin = "http://127.0.0.1:" + port;
   const state = collectorState();
-  if (state.server) return { port: 3184, running: true };
+  if (state.server) return { port, running: true };
   state.nonce = randomBytes(24).toString("base64url");
   const server = createServer(async (request, response) => {
     try {
-      if (request.headers.host !== "127.0.0.1:3184") {
+      if (request.headers.host !== "127.0.0.1:" + port) {
         reply(response, 403, { message: "Host not allowed." });
         return;
       }
-      const route = new URL(request.url, origin).pathname;
+      const route = new URL(request.url, bridgeOrigin).pathname;
       if (request.method === "GET" && route === "/connect") {
         response.writeHead(200, {
           "Content-Type": "text/html; charset=utf-8",
@@ -66,7 +68,7 @@ export async function startImportBridge() {
       if (
         request.method !== "POST" ||
         !["/status", "/transfer"].includes(route) ||
-        request.headers.origin !== origin ||
+        request.headers.origin !== bridgeOrigin ||
         !equal(request.headers["x-collector-nonce"], state.nonce)
       ) {
         reply(response, 403, {
@@ -104,8 +106,14 @@ export async function startImportBridge() {
         });
         return;
       }
+      state.import_status = {
+        status: target.status,
+        claude_consent: target.claude_consent === true,
+        error_code: target.error_code || null,
+        checked_at: new Date().toISOString(),
+      };
       if (target.status === "ready") {
-        clearCollectedRecords();
+        // A completed old connection must not erase a later collection pass.
         reply(response, 200, {
           target,
           counts: collectedCounts(),
@@ -156,11 +164,11 @@ export async function startImportBridge() {
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(3184, "127.0.0.1", resolve);
+    server.listen(port, "127.0.0.1", resolve);
   });
   server.unref();
   state.server = server;
-  return { port: 3184, running: true };
+  return { port, running: true };
 }
 export async function stopImportBridge() {
   const state = collectorState();
@@ -170,4 +178,6 @@ export async function stopImportBridge() {
   );
   state.server = null;
   state.nonce = null;
+  state.import_status = null;
+  state.bridge_status_monitor = false;
 }

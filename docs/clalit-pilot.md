@@ -39,3 +39,11 @@ Evidence reviews and lifestyle drafts use the retained excerpts under the same p
 Browsers, the operating system, Clalit and the AI provider have their normal data handling. Document-free processing reduces retained copies but is not a zero-retention or compliance guarantee. Real-patient launch still requires the clinic's documented collection, processor, access and retention arrangements.
 
 References: [Clalit medical-summary availability](https://www.clalit.co.il/he/info/services/Pages/howto_medical_summary.aspx), [Clalit confidentiality and online-record limits](https://www.clalit.co.il/he/info/about_site/Pages/confidentiality.aspx), [Clalit medication records](https://www.clalit.co.il/he/info/services/pages/medicine_list.aspx), [Privacy Protection Authority](https://www.gov.il/he/pages/tikun13_qa?chapterIndex=6), [Ministry of Health record management](https://www.gov.il/he/pages/mk09-2019-instructions?chapterIndex=4).
+
+## Collection follow-ups
+
+Read-only menu recognition also handles the observed Clalit labels for consultant visit summaries, hospital summaries, imaging/X-ray results and medications/prescriptions. Clinical tables and report listings are distinguished: a list of visits is not imported as if the complete visit reports were read. Inline read-only controls use their normal UI action rather than bypassing their click handler.
+
+The local connection exposes only the processing state, consent flag, safe error code and last-check time to the collector diagnostics. It never prints the patient-card name, pairing token, source references or health values. After an accepted transfer, raw text is cleared immediately. An old connection reporting a completed summary cannot erase a newer collection pass; collecting and importing are separate operations.
+
+Further imports require a new card-scoped connection and a new source selection. Earlier summaries are retained. The original documents are never attached by this pilot.

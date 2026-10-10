@@ -1,3 +1,4 @@
+import { monitorImportStatus } from "./clalit-bridge-status.mjs";
 import {
   rememberMedicalRecord,
   rememberCoverage,
@@ -34,9 +35,17 @@ const categories = [
   },
   {
     id: "visits",
-    labels: ["סיכומי ביקור", "סיכומי ביקורים", "Visit summaries"],
+    labels: [
+      "סיכומי ביקור",
+      "סיכומי ביקורים",
+      "סיכומי ביקור רפואה יועצת",
+      "Visit summaries",
+    ],
   },
-  { id: "hospitalizations", labels: ["סיכומי אשפוז", "Hospital summaries"] },
+  {
+    id: "hospitalizations",
+    labels: ["סיכומי אשפוז", "סיכומים מבתי חולים", "Hospital summaries"],
+  },
   {
     id: "diagnoses",
     labels: [
@@ -55,6 +64,7 @@ const categories = [
       "תרופות",
       "תרופות קבועות",
       "מרשמים ותרופות",
+      "תרופות ומרשמים",
       "ניפוק תרופות",
       "Medications",
     ],
@@ -65,7 +75,12 @@ const categories = [
   },
   {
     id: "imaging",
-    labels: ["בדיקות דימות", "תוצאות דימות", "Imaging results"],
+    labels: [
+      "בדיקות דימות",
+      "תוצאות דימות",
+      "תוצאות בדיקות דימות ורנטגן",
+      "Imaging results",
+    ],
   },
   { id: "vaccinations", labels: ["חיסונים", "Vaccinations"] },
 ];
@@ -218,6 +233,7 @@ async function navigate(control) {
       return anchor
         ? {
             href: anchor.href,
+            inline_viewer: anchor.hasAttribute("onclick"),
             download: anchor.hasAttribute("download"),
             inert_toggle: Boolean(
               element.closest("nav,aside,[role=navigation]") &&
@@ -235,7 +251,7 @@ async function navigate(control) {
         /\.(pdf|xlsx?|csv|docx?)(?:[?#]|$)/i.test(target.href))
     )
       return { ok: false, status: "DESTINATION_NOT_ALLOWED" };
-    if (target && !target.inert_toggle) {
+    if (target && !target.inert_toggle && !target.inline_viewer) {
       // Follow only the HTTPS destination observed on the validated read-only menu link.
       // This performs normal authenticated navigation; it does not call hidden APIs or bypass login.
       await control.frame
@@ -247,6 +263,10 @@ async function navigate(control) {
     await control.frame
       .page()
       .waitForLoadState("domcontentloaded", { timeout: 10000 })
+      .catch(() => {});
+    await control.frame
+      .page()
+      .waitForLoadState("networkidle", { timeout: 5000 })
       .catch(() => {});
     return { ok: true };
   } catch (error) {
@@ -315,6 +335,107 @@ async function safeNavigationCaptions(context) {
     "מיקרוביולוגיה",
     "צילומים",
     "ופענוחים",
+    "המרשמים",
+    "בתוקף",
+    "במרשמים",
+    "מרשמיי",
+    "מרשמים",
+    "מונפקים",
+    "הקבועות",
+    "המנופקות",
+    "ניפוקי",
+    "למרשמים",
+    "לתרופות",
+    "רשימה",
+    "הצפייה",
+    "מיון",
+    "בחדרי",
+    "ממחלקות",
+    "מחלקות",
+    "וצילום",
+    "והדמיה",
+    "ומכונים",
+    "רנטגן",
+    "דיגיטליים",
+    "דיגיטלי",
+    "מסמכים",
+    "רפואיים",
+    "באינטרנט",
+    "פעילים",
+    "פעיל",
+    "הצגת",
+    "הצג",
+    "הצגה",
+    "לצפייה",
+    "מרשם",
+    "בקשות",
+    "לרכישה",
+    "רכישת",
+    "חידוש",
+    "לחידוש",
+    "הזמנת",
+    "קבלת",
+    "מידע",
+    "כרוניות",
+    "מחלות",
+    "הכרוניות",
+    "מכרוניות",
+    "אלרגיות",
+    "רגישויות",
+    "ומרשמים",
+    "וצילומים",
+    "בסיכום",
+    "בסיכומי",
+    "במידע",
+    "למבוגר",
+    "קטין",
+    "קטינים",
+    "לילדים",
+    "לילד",
+    "מומחה",
+    "יועץ",
+    "יועצים",
+    "רשומות",
+    "הנפקת",
+    "יצירת",
+    "בקשת",
+    "בקשה",
+    "לקבלת",
+    "פענוח",
+    "ופענוח",
+    "מלא",
+    "עדכני",
+    "מוסדות",
+    "מבית",
+    "בית",
+    "של",
+    "ויתור",
+    "סודיות",
+    "במערכת",
+    "בהסכמה",
+    "במרפאות",
+    "חוץ",
+    "בבתי",
+    "ביקורים",
+    "רפואיים",
+    "ופניות",
+    "אחרונות",
+    "להצגה",
+    "לצפייה",
+    "צפייה",
+    "להדפסה",
+    "למטופל",
+    "המטופל",
+    "רפואיות",
+    "קבועות",
+    "המשפחה",
+    "מטפל",
+    "טיפול",
+    "בקשות",
+    "היסטוריה",
+    "מרשמים",
+    "פעילות",
+    "טפסים",
   ]);
   const captions = [];
   for (const page of context.pages())
@@ -326,9 +447,16 @@ async function safeNavigationCaptions(context) {
           const allowed = new Set(allowedWords),
             result = new Set();
           for (const link of document.querySelectorAll(
-            "nav a,nav button,[role=navigation] a,aside a",
+            "nav a,nav button,[role=navigation] a,aside a,main a,main button,table a",
           )) {
-            const caption = (link.innerText || "")
+            const caption = (
+              link.innerText ||
+              link.textContent ||
+              link.getAttribute("aria-label") ||
+              link.querySelector("img")?.getAttribute("alt") ||
+              link.getAttribute("title") ||
+              ""
+            )
               .replace(/[\u200e\u200f\u202a-\u202e\u2066-\u2069]/g, "")
               .replace(/\s+/g, " ")
               .trim();
@@ -338,6 +466,27 @@ async function safeNavigationCaptions(context) {
               caption.split(" ").every((word) => allowed.has(word))
             )
               result.add(caption);
+            else if (
+              caption &&
+              caption.length < 120 &&
+              link.closest("nav,aside,[role=navigation]") &&
+              /^(?:תוצאות בדיקות דימות|סיכומי ביקור|סיכומים .*חולים|תרופות ומרשמים|צפייה בסיכום מידע רפואי)(?:\s|$)/.test(
+                caption,
+              ) &&
+              !/[0-9@]/.test(caption)
+            )
+              result.add(caption);
+            else if (
+              caption &&
+              caption.length < 120 &&
+              caption.split(" ").some((word) => allowed.has(word))
+            )
+              result.add(
+                caption
+                  .split(" ")
+                  .map((word) => (allowed.has(word) ? word : "[unknown]"))
+                  .join(" "),
+              );
           }
           return [...result];
         },
@@ -348,6 +497,7 @@ async function safeNavigationCaptions(context) {
   return [...new Set(captions)];
 }
 export async function inspectMedicalMenus(context, structure) {
+  monitorImportStatus();
   const frames = [];
   for (const page of context.pages())
     for (const frame of page.frames()) {
@@ -373,6 +523,7 @@ export async function inspectMedicalMenus(context, structure) {
       available.push(category.id);
   return {
     status: "MEDICAL_MENU_INVENTORY",
+    import_connection_status: collectorState().import_status || null,
     medical_record_root_found: Boolean(await locateUnique(context, rootLabels)),
     recognized_categories: available,
     known_menu_counts: await knownMenuCounts(context),
@@ -455,7 +606,14 @@ export function collectCategoryTables({ category } = {}) {
         values.push(cells);
       }
       if (values.length > 500) return { status: "CATEGORY_LIMIT", tables: [] };
-      if (values.length) tables.push({ headers, rows: values });
+      if (values.length)
+        tables.push({
+          headers,
+          rows: values,
+          listing_only:
+            ["visits", "hospitalizations", "imaging"].includes(category) &&
+            Boolean(table.querySelector("tbody a,tbody button")),
+        });
     }
   return {
     status: tables.length
@@ -818,6 +976,20 @@ export async function collectMedicalCategories(context, inspectStructure) {
     };
   const recordPage = root.frame.page();
   const ownPage = { pages: () => [recordPage] };
+  const summary = await locateUnique(
+    ownPage,
+    categories.find((category) => category.id === "medical_summary").labels,
+  );
+  if (summary) {
+    const inert = await summary.item.evaluate((element) =>
+      /^(?:#|javascript:\s*void\s*\(\s*0\s*\)\s*;?)$/i.test(
+        element.closest("a")?.getAttribute("href") || "",
+      ),
+    );
+    if (inert && !(await locateUnique(ownPage, ["צפייה בסיכום מידע רפואי"])))
+      await navigate(summary);
+  }
+
   let inventory = await inspectMedicalMenus(ownPage, inspectStructure);
   // Do not toggle an already expanded menu closed when categories are accessible.
   if (!inventory.recognized_categories.length) {
@@ -831,7 +1003,11 @@ export async function collectMedicalCategories(context, inspectStructure) {
   collectorState().running = true;
   try {
     for (const category of categories) {
-      const control = await locateUnique(ownPage, category.labels);
+      const control =
+        category.id === "medical_summary"
+          ? (await locateUnique(ownPage, ["צפייה בסיכום מידע רפואי"])) ||
+            (await locateUnique(ownPage, category.labels))
+          : await locateUnique(ownPage, category.labels);
       if (!control) {
         rememberCoverage(category.id, "menu_not_recognized", 0);
         results.push({ category: category.id, status: "MENU_NOT_RECOGNIZED" });
@@ -866,16 +1042,23 @@ export async function collectMedicalCategories(context, inspectStructure) {
             0,
           );
           temporary.push(extracted);
-          if (category.id !== "laboratory")
+          if (
+            category.id !== "laboratory" &&
+            extracted.tables.some((table) => !table.listing_only)
+          )
             rememberMedicalRecord(
               category.id,
-              extracted.tables.flatMap((table) =>
-                table.rows.map((row) =>
-                  row
-                    .map((value, index) => table.headers[index] + ": " + value)
-                    .join(" | "),
+              extracted.tables
+                .filter((table) => !table.listing_only)
+                .flatMap((table) =>
+                  table.rows.map((row) =>
+                    row
+                      .map(
+                        (value, index) => table.headers[index] + ": " + value,
+                      )
+                      .join(" | "),
+                  ),
                 ),
-              ),
               { record_reference: null, collection_date_text: null },
               frame.url(),
               false,
@@ -902,6 +1085,30 @@ export async function collectMedicalCategories(context, inspectStructure) {
           : changed
             ? "MENU_NAVIGATION_CHANGED"
             : "CATEGORY_ADAPTER_REQUIRED",
+        safe_category_controls: await safeNavigationCaptions(ownPage),
+        readonly_page_shape: await recordPage.evaluate(() => ({
+          image_links: [...document.querySelectorAll("main a,table a")].filter(
+            (link) => link.querySelector("img"),
+          ).length,
+          empty_text_links: [
+            ...document.querySelectorAll("main a,table a"),
+          ].filter((link) => !link.textContent?.trim()).length,
+          clinical_heading_count: [
+            ...document.querySelectorAll("h1,h2,h3,th"),
+          ].filter((e) => /תרופ|מרש|אבחנ|רגיש|סיכום/.test(e.textContent || ""))
+            .length,
+        })),
+        structures: await Promise.all(
+          recordPage
+            .frames()
+            .filter((frame) => isTrustedClalit(frame.url()))
+            .map(async (frame) => ({
+              visible: await frameIsVisible(frame),
+              structure: await frame
+                .evaluate(inspectStructure)
+                .catch(() => null),
+            })),
+        ),
         table_count: tableCount,
         row_count: rowCount,
       });

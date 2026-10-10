@@ -169,3 +169,29 @@ test("lab report Show action reads values temporarily and skips sending actions 
     await browser.close();
   }
 });
+
+test("a visit listing is distinguishable from a clinical report; medication values remain structured and exact", async () => {
+  const browser = await chromium.launch({ headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(
+      '<table><thead><tr><th>תאריך ביקור</th><th>סיכום ביקור</th></tr></thead><tbody><tr><td>01.01.2026</td><td><a href="https://e-services.clalit.co.il/fictional">הצגת סיכום</a></td></tr></tbody></table>',
+    );
+    const listing = await page.evaluate(collectCategoryTables, {
+      category: "visits",
+    });
+    assert.equal(listing.tables[0].listing_only, true);
+    await page.setContent(
+      "<table><thead><tr><th>שם התרופה</th><th>מינון</th></tr></thead><tbody><tr><td>FICTIONAL_MEDICINE</td><td>7.3 mg</td></tr></tbody></table>",
+    );
+    const medication = await page.evaluate(collectCategoryTables, {
+      category: "medications",
+    });
+    assert.equal(medication.tables[0].listing_only, false);
+    assert.deepEqual(medication.tables[0].rows, [
+      ["FICTIONAL_MEDICINE", "7.3 mg"],
+    ]);
+  } finally {
+    await browser.close();
+  }
+});
