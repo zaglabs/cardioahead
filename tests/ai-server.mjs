@@ -21,6 +21,45 @@ http
       res.end(JSON.stringify(calls));
       return;
     }
+    if (req.method === "GET" && req.url.startsWith("/models")) {
+      if (req.headers["x-api-key"] !== "local-claude-test-key") {
+        res.statusCode = 401;
+        res.end("{}");
+        return;
+      }
+      res.end(
+        JSON.stringify({
+          data: [
+            {
+              id: "claude-sonnet-4-6",
+              display_name: "Claude Sonnet 4.6",
+              capabilities: {
+                pdf_input: { supported: true },
+                structured_outputs: { supported: true },
+              },
+            },
+            {
+              id: "claude-haiku-4-5-20251001",
+              display_name: "Claude Haiku 4.5",
+              capabilities: {
+                pdf_input: { supported: true },
+                structured_outputs: { supported: true },
+              },
+            },
+            {
+              id: "claude-unsupported",
+              display_name: "Unsupported",
+              capabilities: {
+                pdf_input: { supported: false },
+                structured_outputs: { supported: false },
+              },
+            },
+          ],
+          has_more: false,
+        }),
+      );
+      return;
+    }
     if (
       req.method !== "POST" ||
       !["/responses", "/messages"].includes(req.url)
@@ -33,6 +72,58 @@ http
     for await (const c of req) raw += c;
     const payload = JSON.parse(raw);
     const claude = req.url === "/messages";
+    if (claude && payload.stream) {
+      const end = res.end.bind(res);
+      res.end = (raw) => {
+        let value;
+        try {
+          value = JSON.parse(raw);
+        } catch {
+          return end(raw);
+        }
+        if (res.statusCode >= 400 || !Array.isArray(value.content))
+          return end(raw);
+        res.setHeader("Content-Type", "text/event-stream");
+        const frame = (e) => "data: " + JSON.stringify(e) + "\n\n";
+        let wire = frame({
+          type: "message_start",
+          message: { stop_reason: null },
+        });
+        for (const [index, block] of value.content.entries()) {
+          wire += frame({
+            type: "content_block_start",
+            index,
+            content_block: { type: block.type, text: "" },
+          });
+          wire += frame({
+            type: "content_block_delta",
+            index,
+            delta: { type: "text_delta", text: block.text },
+          });
+          wire += frame({ type: "content_block_stop", index });
+        }
+        wire +=
+          frame({
+            type: "message_delta",
+            delta: { stop_reason: value.stop_reason },
+          }) + frame({ type: "message_stop" });
+        return end(wire);
+      };
+    }
+    if (claude && payload.max_tokens === 32) {
+      if (req.headers["x-api-key"] !== "local-claude-test-key") {
+        res.statusCode = 401;
+        res.end("{}");
+        return;
+      }
+      res.end(
+        JSON.stringify({
+          stop_reason: "end_turn",
+          content: [{ type: "text", text: '{"ok":true}' }],
+        }),
+      );
+      return;
+    }
     if (
       claude
         ? req.headers["x-api-key"] !== "local-claude-test-key" ||
@@ -148,7 +239,9 @@ http
         };
       calls.push({
         task: p.task,
+        model: payload.model,
         provider: claude ? "claude" : "openai",
+        streaming: Boolean(payload.stream),
         ids: p.patient.flatMap((f) => f.fact.refs.map((r) => r.document_id)),
       });
       res.end(

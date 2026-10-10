@@ -8,7 +8,6 @@ import {
   Pencil,
   FileText,
   Heart,
-  LoaderCircle,
   Plus,
   RefreshCw,
   Save,
@@ -17,6 +16,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
+import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
+import { HeartLoader } from "./heart-loader";
 import { useLanguage } from "./language-provider";
 import { useDocumentPreview } from "./document-preview";
 import { VisitReportView } from "./visit-report-view";
@@ -373,6 +374,47 @@ export function VisitWorkspace({
     data?.deliveries.some(
       (d) => !d.revoked_at && d.recipient !== preview.recipient,
     );
+  const generationControls = data ? (
+    <div className="visit-generation">
+      <p>
+        {t(
+          "התוכן נוצר רק לאחר לחיצה על הכנת טיוטה. לחצו כדי לקרוא את המסמכים, להכין הצעה ולבדוק אותה מול המקורות. הטיוטה תישמר לעיון ולעריכת הרופא.",
+        )}
+      </p>
+      <button
+        className="button button-dark generate-draft-button"
+        disabled={
+          busy ||
+          processing ||
+          !data.ai_configured ||
+          !appointment.documents.length ||
+          (mode === "visit" && !clinician)
+        }
+        onClick={() => {
+          if (head || dirty) setRegenerate(true);
+          else void generate();
+        }}
+      >
+        {busy || processing ? (
+          <HeartLoader size={20} />
+        ) : (
+          <BookOpen size={20} />
+        )}
+        {t(
+          processing
+            ? "מכינים טיוטה…"
+            : busy
+              ? "העיבוד מתבצע…"
+              : head
+                ? "יצירה מחדש של טיוטה"
+                : "הכנת טיוטה בסיוע AI",
+        )}
+      </button>
+      <p className="form-note">
+        {t("יצירה מחדש לא תשנה דוח שנשלח או המלצות שכבר הועתקו לסיכום.")}
+      </p>
+    </div>
+  ) : null;
   return (
     <section className="visit-workspace">
       <div className="visit-purpose">
@@ -395,9 +437,15 @@ export function VisitWorkspace({
           {message}
         </p>
       )}
-      {!data && <p role="status">{t("טוענים את סביבת הביקור…")}</p>}
+      {!data && (
+        <div className="clinical-loading" role="status">
+          <HeartLoader />
+          {t("טוענים את סביבת הביקור…")}
+        </div>
+      )}
       {data && (
         <>
+          {generationControls}
           <div className="visit-toolbar">
             <span className="badge">
               {t("טיוטה")} {head && "· " + t("גרסה") + " " + head.revision}
@@ -474,7 +522,7 @@ export function VisitWorkspace({
           )}
           {processing && (
             <div className="visit-processing" role="status">
-              <LoaderCircle className="evidence-spinner" size={28} />
+              <HeartLoader />
               <h3>
                 {t(
                   job?.stage === "searching"
@@ -492,7 +540,14 @@ export function VisitWorkspace({
           {job?.can_retry && (
             <p className="form-error">
               {t(
-                "הכנת הטיוטה לא הושלמה. הטיוטות הקודמות נשמרו; אפשר לנסות שוב.",
+                AI_FAILURE_MESSAGES[job.error_code || ""] ||
+                  "הכנת הטיוטה לא הושלמה. הטיוטות הקודמות נשמרו; אפשר לנסות שוב.",
+              )}
+              {job.error_code && (
+                <>
+                  <br />
+                  <bdi>{job.error_code}</bdi>
+                </>
               )}
             </p>
           )}
@@ -581,7 +636,7 @@ export function VisitWorkspace({
           )}
           {mode === "lifestyle" ? (
             <>
-              {!head && !life.sections.length && (
+              {!head && !life.sections.length && !processing && (
                 <div className="visit-empty">
                   <Heart size={28} />
                   <h3>{t("המלצות מותאמות לעיון הרופא")}</h3>
@@ -1118,28 +1173,6 @@ export function VisitWorkspace({
               </div>
             </>
           )}
-          <div className="visit-generation">
-            <button
-              className="button button-outline"
-              disabled={
-                busy ||
-                processing ||
-                !data.ai_configured ||
-                !appointment.documents.length ||
-                (mode === "visit" && !clinician)
-              }
-              onClick={() => {
-                if (head || dirty) setRegenerate(true);
-                else void generate();
-              }}
-            >
-              <BookOpen size={17} />
-              {t(head ? "יצירה מחדש של טיוטה" : "הכנת טיוטה בסיוע AI")}
-            </button>
-            <p className="form-note">
-              {t("יצירה מחדש לא תשנה דוח שנשלח או המלצות שכבר הועתקו לסיכום.")}
-            </p>
-          </div>
           {mode === "visit" && data.deliveries.length > 0 && (
             <details className="report-delivery-history">
               <summary>{t("אישורים, מסירה וקישורים קודמים")}</summary>

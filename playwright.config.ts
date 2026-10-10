@@ -56,6 +56,21 @@ export default defineConfig({
       },
     },
     {
+      command: "npm run start -- --port 3130",
+      url: "http://127.0.0.1:3130",
+      reuseExistingServer: false,
+      timeout: 60000,
+      env: {
+        ...localEnv,
+        CARDIOAHEAD_AI_PROVIDER: "claude",
+        ANTHROPIC_API_KEY: "local-claude-test-key",
+        CARDIOAHEAD_ENABLE_CLAUDE_TEST_PDFS: "true",
+        CARDIOAHEAD_LOCAL_DATA_DIR:
+          localEnv.CARDIOAHEAD_LOCAL_DATA_DIR + "-settings",
+        NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:3130",
+      },
+    },
+    {
       command: "node tests/ai-server.mjs",
       url: "http://127.0.0.1:3198/calls",
       reuseExistingServer: false,

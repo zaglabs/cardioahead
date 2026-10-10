@@ -1,3 +1,5 @@
+import { claudeModel } from "./settings";
+import { readClaudeMessage } from "./stream";
 import { claudeSummarySchema, normalizeClaudeSummary } from "./claude-schema";
 import { classifyProviderFailure, classifyTransportFailure } from "./errors";
 import "server-only";
@@ -49,7 +51,7 @@ export async function requestClinicalSummary(
   const provider = selectedProvider();
   const model =
     provider === "claude"
-      ? process.env.CLAUDE_MODEL || "claude-sonnet-4-6"
+      ? await claudeModel()
       : process.env.OPENAI_MODEL || "gpt-5.4";
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -60,6 +62,7 @@ export async function requestClinicalSummary(
     headers["anthropic-version"] = "2023-06-01";
     body = {
       model,
+      stream: true,
       max_tokens: 18000,
       system:
         instructions +
@@ -121,9 +124,12 @@ export async function requestClinicalSummary(
     );
     throw new Error(code);
   }
-  const result = await response.json().catch(() => {
-    throw new Error("AI_INVALID_RESPONSE");
-  });
+  const result =
+    provider === "claude"
+      ? await readClaudeMessage(response)
+      : await response.json().catch(() => {
+          throw new Error("AI_INVALID_RESPONSE");
+        });
   let text: string;
   if (provider === "claude") {
     if (result.stop_reason !== "end_turn" || !Array.isArray(result.content))
@@ -165,7 +171,7 @@ export async function requestEvidenceJSON(
   const provider = selectedProvider(),
     model =
       provider === "claude"
-        ? process.env.CLAUDE_MODEL || "claude-sonnet-4-6"
+        ? await claudeModel()
         : process.env.OPENAI_MODEL || "gpt-5.4";
   const content = [
     { type: "input_text", text: JSON.stringify(payload) },
@@ -180,7 +186,8 @@ export async function requestEvidenceJSON(
     headers["anthropic-version"] = "2023-06-01";
     requestBody = {
       model,
-      max_tokens: 10000,
+      stream: true,
+      max_tokens: /verification/.test(name) ? 5000 : 6500,
       system: instructions,
       messages: [
         {
@@ -227,9 +234,12 @@ export async function requestEvidenceJSON(
         await response.json().catch(() => null),
       ),
     );
-  const result = await response.json().catch(() => {
-    throw new Error("AI_INVALID_RESPONSE");
-  });
+  const result =
+    provider === "claude"
+      ? await readClaudeMessage(response)
+      : await response.json().catch(() => {
+          throw new Error("AI_INVALID_RESPONSE");
+        });
   if (
     provider === "claude"
       ? result.stop_reason !== "end_turn"

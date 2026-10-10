@@ -19,7 +19,7 @@ The local backend is always disabled on Vercel.
 
 Source-cited AI drafts and clinician-requested saved presentations are implemented.
 Clinician-edited lifestyle drafts and visit summaries now support exact-version approval, secure email notifications and verified patient PDF access.
-See [visit report workflow](docs/visit-reports.md).
+See [visit report workflow](docs/visit-reports.md) and [AI settings and generation timing](docs/ai-settings.md).
 Prof. Maor's exact report template and real-data launch controls remain next.
 See [clinical processing and presentation setup](docs/clinical-analysis.md).
 
@@ -41,6 +41,7 @@ forms, sign-in verification and uploaded documents intact.
 - `/`: Hebrew landing page
 - `/admin`: six-digit Resend email login and clinic appointment inbox
 - `/admin/users`: sole-owner staff approval and user management
+- `/admin/api-keys`: masked Anthropic configuration, connection checks and saved model selection
 - `/invite/[token]`: code verification, PDF selection/upload, confirmation and submission
 - `/report/[token]`: email verification and the frozen clinician-approved report/PDF
 - `/test-documents`: three fictional Hebrew PDFs and testing instructions
@@ -50,7 +51,7 @@ forms, sign-in verification and uploaded documents intact.
 ## Setup and hosting
 
 See [private storage and account setup](docs/storage-setup.md).
-Run the migrations in order through 008 for sign-in/storage, clinical records, evidence and visit-report delivery in a dedicated Supabase project, verify a sending domain in Resend,
+Run the migrations in order through 009 for sign-in/storage, clinical records, evidence and visit-report delivery in a dedicated Supabase project, verify a sending domain in Resend,
 and add server-only service keys and a random secret to Vercel. Do not paste credentials into
 source code or commit environment files.
 

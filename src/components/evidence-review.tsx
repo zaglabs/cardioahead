@@ -3,12 +3,12 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import {
   BookOpen,
   FileText,
-  LoaderCircle,
   RefreshCw,
   Search,
   ShieldCheck,
 } from "lucide-react";
 import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
+import { HeartLoader } from "./heart-loader";
 import { useLanguage } from "./language-provider";
 import { useDocumentPreview } from "./document-preview";
 import type { AppointmentView } from "@/lib/portal/types";
@@ -276,7 +276,12 @@ export function EvidenceReview({
           </button>
         </div>
       )}
-      {!data && !error && <p role="status">{t("טוענים את סקירת הראיות…")}</p>}
+      {!data && !error && (
+        <div className="clinical-loading" role="status">
+          <HeartLoader />
+          {t("טוענים את סקירת הראיות…")}
+        </div>
+      )}
       {data && (
         <>
           {data.history.length > 1 && (
@@ -324,7 +329,7 @@ export function EvidenceReview({
           )}
           {processing && (
             <div className="evidence-progress" role="status" aria-live="polite">
-              <LoaderCircle size={28} className="evidence-spinner" />
+              <HeartLoader />
               <h3>{t(stageLabels[review!.stage])}</h3>
               <p>{t("העיבוד נמשך ברקע. הסקירה תישמר בתיק המטופל.")}</p>
               <ol>

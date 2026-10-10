@@ -551,3 +551,9 @@ body:has(.patient-view-dialog[open]) {
     margin-top: 20px;
   }
 }
+
+@media (min-width: 1500px) {
+  .detail-tabs.has-visit {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}

@@ -318,10 +318,19 @@ function ClinicWorkspace({
           </div>
           <div className="clinic-tools">
             {isAdmin(staff) && (
-              <Link href="/admin/users" className="admin-area-link">
-                <ShieldCheck size={16} />
-                {t("ניהול משתמשים")}
-              </Link>
+              <div className="admin-links">
+                <Link href="/admin/users" className="admin-area-link">
+                  <ShieldCheck size={16} />
+                  {t("ניהול משתמשים")}
+                </Link>
+                <Link
+                  href="/admin/api-keys"
+                  className="admin-area-link api-keys-link"
+                >
+                  <ShieldCheck size={16} />
+                  {t("מפתחות API")}
+                </Link>
+              </div>
             )}
             <button
               className="icon-button"

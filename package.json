@@ -9,7 +9,7 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "test": "playwright test",
-    "test:database": "node --test tests/database.test.mjs tests/clinical-schema.test.mjs tests/evidence-schema.test.mjs tests/evidence-database.test.mjs tests/evidence-retrieval.test.mjs tests/visit-database.test.mjs"
+    "test:database": "node --test tests/database.test.mjs tests/clinical-schema.test.mjs tests/evidence-schema.test.mjs tests/evidence-database.test.mjs tests/evidence-retrieval.test.mjs tests/visit-database.test.mjs tests/ai-settings.test.mjs"
   },
   "engines": {
     "node": "24.x"

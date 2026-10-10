@@ -27,6 +27,7 @@ import type {
   VisitWorkspace,
 } from "@/lib/visit/types";
 type State = {
+  aiSettings?: import("@/lib/clinical/settings").AISettings;
   recordVersions: RecordVersion[];
   reportApprovals: Approval[];
   reportDeliveries: Delivery[];

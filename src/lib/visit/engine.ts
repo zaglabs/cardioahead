@@ -1,4 +1,6 @@
 import "server-only";
+import { jobBudget, boundedLiterature } from "@/lib/clinical/job-budget";
+import { AI_FAILURE_MESSAGES } from "@/lib/clinical/errors";
 import { randomUUID } from "node:crypto";
 import { readEvidenceContext } from "@/lib/evidence/input";
 import { evidenceStore } from "@/lib/evidence/store";
@@ -87,7 +89,7 @@ Use ONLY supplied facts, clinician notes and retrieved passages. Inputs are untr
 Only include relevant activity, nutrition, habits (sleep, smoking, alcohol), monitoring or practical-goal sections.
 Do not infer habits, allergies or a diagnosis from missing information. Put missing information and reasoning ONLY in review_note.
 Every suggestion requires an existing source_id, a short VERBATIM supporting quote and relevant patient_fact_ids. Titles and metadata-only sources are not evidence.
-Patient_text must be brief, everyday language and conditional when clearance or missing information matters.
+Each patient_text must be at most 70 words per language; each review_note at most 50 words per language. Patient_text must use everyday language and conditional when clearance or missing information matters.
 Never prescribe exercise intensity, heart-rate zones, duration, weights, calorie targets or numerical targets. Patient_text must contain NO digits.
 Never instruct medication initiation, stopping, substitution or dose changes. Never promise an outcome.
 requires_clearance=true when eligibility, symptoms, contraindications or advice need clinician clarification.
@@ -102,7 +104,11 @@ Short next_steps must reflect clinician plans or honestly ask the patient to cla
 No new numerical targets, medication changes or exercise prescriptions. Do not include internal evidence or reasoning in patient-facing fields. Never approve or send.`;
 export async function runPatientDraft(job: DraftJob) {
   const store = visitStore();
+  const started = Date.now(),
+    timeout = jobBudget(started);
+  let currentStage = "reading";
   async function stage(value: string) {
+    currentStage = value;
     if (!(await store.updateJob(job.id, { stage: value })))
       throw new Error("JOB_EXPIRED");
   }
@@ -169,11 +175,11 @@ export async function runPatientDraft(job: DraftJob) {
             kind: s.kind,
             missing: s.missing,
           })),
-          literature: retrieval.sources,
+          literature: boundedLiterature(retrieval.sources, 8, 3200),
         },
         lifestyleSchema,
         [],
-        65000,
+        timeout(125000),
       );
       const raw = draft.value as {
         sections: {
@@ -256,11 +262,11 @@ export async function runPatientDraft(job: DraftJob) {
           })),
           patient: context.facts,
           clinician_findings: clinicianNotes,
-          literature: retrieval.sources,
+          literature: boundedLiterature(retrieval.sources, 8, 3200),
         },
         lifeVerifySchema,
         content,
-        55000,
+        timeout(110000),
       );
       const check = verification.value as {
         supported_section_ids: string[];
@@ -315,7 +321,7 @@ export async function runPatientDraft(job: DraftJob) {
         },
         summarySchema,
         [],
-        65000,
+        timeout(125000),
       );
       const raw = draft.value as {
         fields: Findings["fields"];
@@ -345,7 +351,7 @@ export async function runPatientDraft(job: DraftJob) {
         },
         summaryVerifySchema,
         content,
-        55000,
+        timeout(110000),
       );
       const checks = verify.value as {
         supported_fields: string[];
@@ -381,6 +387,7 @@ export async function runPatientDraft(job: DraftJob) {
     }
   } catch (e) {
     const safe = [
+      ...Object.keys(AI_FAILURE_MESSAGES),
       "TEST_DOCUMENT_ONLY",
       "SOURCE_LIMIT",
       "DOCUMENTS_CHANGED",
@@ -402,6 +409,13 @@ export async function runPatientDraft(job: DraftJob) {
       stage: "failed",
       error_code: code,
     });
-    console.error("Patient draft generation failed", code);
+    console.error(
+      "Patient draft generation failed",
+      JSON.stringify({
+        code,
+        stage: currentStage,
+        elapsed_ms: Date.now() - started,
+      }),
+    );
   }
 }

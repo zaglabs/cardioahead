@@ -5,6 +5,7 @@ export default async function setup() {
   for (const [port, filename] of [
     [3100, "owner-auth.json"],
     [3120, "claude-owner-auth.json"],
+    [3130, "settings-owner-auth.json"],
   ] as const) {
     const base = "http://127.0.0.1:" + port,
       api = await request.newContext({ baseURL: base });

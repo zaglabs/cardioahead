@@ -1,5 +1,6 @@
 "use client";
 import { useRef, useState } from "react";
+import { HeartLoader } from "./heart-loader";
 import { useLanguage } from "./language-provider";
 import { DocumentDropzone } from "./document-dropzone";
 import type { AppointmentView } from "@/lib/portal/types";
@@ -89,6 +90,12 @@ export function ClinicDocumentUpload({
   return (
     <div className="clinic-upload">
       <h3>{t("העלאת מסמכים מהמרפאה")}</h3>
+      {busy && (
+        <div className="clinical-loading" role="status">
+          <HeartLoader />
+          {t("העיבוד מתבצע…")}
+        </div>
+      )}
       <DocumentDropzone busy={busy} onFiles={(files) => void upload(files)} />
       <div className="document-options" aria-live="polite">
         {queue.map((item, index) => (

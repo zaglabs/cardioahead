@@ -7,8 +7,8 @@ import {
   ZoomIn,
   ZoomOut,
   Download,
-  LoaderCircle,
 } from "lucide-react";
+import { HeartLoader } from "./heart-loader";
 import { useLanguage } from "./language-provider";
 import type {
   PDFDocumentProxy,
@@ -268,7 +268,7 @@ function DocumentPreview({
         )}
         {!pdf && !error && (
           <div className="pdf-loading" role="status">
-            <LoaderCircle className="spin" size={26} />
+            <HeartLoader />
             {t("טוענים את המסמך…")}
           </div>
         )}

@@ -6,11 +6,11 @@ import { useCallback, useEffect, useState } from "react";
 import {
   FileText,
   Heart,
-  LoaderCircle,
   CheckCircle2,
   Presentation,
   RefreshCw,
 } from "lucide-react";
+import { HeartLoader } from "./heart-loader";
 import { useLanguage } from "./language-provider";
 import { PresentationViewer } from "./presentation-viewer";
 import { useDocumentPreview } from "./document-preview";
@@ -175,7 +175,7 @@ export function ClinicalInsights({
       )}
       {!data && !error && (
         <div className="clinical-loading">
-          <LoaderCircle className="spin" size={24} />
+          <HeartLoader />
           {t("טוענים את תיק הסיכום…")}
         </div>
       )}
@@ -390,7 +390,11 @@ export function ClinicalInsights({
                     disabled={busy || !clinician}
                     onClick={() => void action("create_presentation")}
                   >
-                    <Presentation size={18} />
+                    {busy ? (
+                      <HeartLoader size={20} />
+                    ) : (
+                      <Presentation size={18} />
+                    )}
                     {busy
                       ? t("יוצרים ושומרים את ההסבר החזותי…")
                       : t("יצירת הסבר חזותי")}
