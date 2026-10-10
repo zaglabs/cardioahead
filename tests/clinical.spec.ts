@@ -124,14 +124,20 @@ test("submitted PDFs produce a cited summary; proposal requires explicit creatio
     "href",
     /\/api\/clinic\/documents\/.+#page=1/,
   );
-  await page.getByRole("tab", { name: "Simulation / presentation" }).click();
+  await page.getByRole("tab", { name: "Visual Explanation" }).click();
   await expect(
-    page.getByText("Proposal for Prof. Maor — no presentation created yet", {
-      exact: true,
-    }),
+    page.getByText(
+      "Proposal for Prof. Maor — no visual explanation created yet",
+      {
+        exact: true,
+      },
+    ),
   ).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Create presentation", exact: true }),
+    page.getByRole("button", {
+      name: "Create Visual Explanation",
+      exact: true,
+    }),
   ).toBeVisible();
   await expect(page.locator(".presentation-viewer")).toHaveCount(0);
   expect((await (await owner.get(endpoint)).json()).presentation).toBeNull();
@@ -140,7 +146,7 @@ test("submitted PDFs produce a cited summary; proposal requires explicit creatio
     fullPage: true,
   });
   await page
-    .getByRole("button", { name: "Create presentation", exact: true })
+    .getByRole("button", { name: "Create Visual Explanation", exact: true })
     .click();
   await expect(page.locator(".presentation-viewer")).toBeVisible();
   await expect(page.locator("svg.clinical-scene").first()).toBeVisible();
@@ -168,14 +174,17 @@ test("submitted PDFs produce a cited summary; proposal requires explicit creatio
     .locator(".case-card")
     .filter({ hasText: "Clinical test " + test.info().project.name })
     .click();
-  await page.getByRole("tab", { name: "Simulation / presentation" }).click();
+  await page.getByRole("tab", { name: "Visual Explanation" }).click();
   await expect(page.locator(".presentation-viewer")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Create presentation", exact: true }),
+    page.getByRole("button", {
+      name: "Create Visual Explanation",
+      exact: true,
+    }),
   ).toHaveCount(0);
   await page.getByLabel("Choose language").selectOption("he");
   await expect(
-    page.getByText("מצגת שמורה בתיק", { exact: false }),
+    page.getByText("הסבר חזותי שמור בתיק", { exact: false }),
   ).toBeVisible();
   expect(
     await page.evaluate(
@@ -193,7 +202,7 @@ test("submitted PDFs produce a cited summary; proposal requires explicit creatio
   await page.getByLabel("בחרו שפה").selectOption("en");
   await page
     .getByRole("button", {
-      name: "Mark presentation reviewed for patient discussion",
+      name: "Mark visual explanation reviewed for patient discussion",
     })
     .click();
   await expect(
@@ -495,11 +504,14 @@ test("patient comparison and markers follow cited findings and preserve unknown 
   );
   await page.goto("/admin?lang=en");
   await page.locator(".case-card").filter({ hasText: label }).click();
-  await page.getByRole("tab", { name: "Simulation / presentation" }).click();
+  await page.getByRole("tab", { name: "Visual Explanation" }).click();
   await expect(
-    page.getByText("For clinician-led presentation during the consultation", {
-      exact: true,
-    }),
+    page.getByText(
+      "For clinician-led visual explanation during the consultation",
+      {
+        exact: true,
+      },
+    ),
   ).toBeVisible();
   await expect(
     page.getByText("An explanation to discuss with your doctor", {

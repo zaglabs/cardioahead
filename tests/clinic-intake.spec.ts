@@ -156,12 +156,15 @@ test("clinic manually creates a private card, drops PDFs, previews in place and 
   await page
     .getByRole("button", { name: "Close document", exact: true })
     .click();
-  await page.getByRole("tab", { name: "Simulation / presentation" }).click();
+  await page.getByRole("tab", { name: "Visual Explanation" }).click();
   await expect(
-    page.getByRole("button", { name: "Create presentation", exact: true }),
+    page.getByRole("button", {
+      name: "Create Visual Explanation",
+      exact: true,
+    }),
   ).toBeVisible();
   await page
-    .getByRole("button", { name: "Create presentation", exact: true })
+    .getByRole("button", { name: "Create Visual Explanation", exact: true })
     .click();
   await expect(page.locator(".presentation-viewer")).toBeVisible();
   const saved = (await (await owner.get(endpoint)).json()).presentation;

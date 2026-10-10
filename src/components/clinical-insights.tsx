@@ -326,7 +326,7 @@ export function ClinicalInsights({
               <div className="saved-presentation-note">
                 <CheckCircle2 size={20} />
                 <p>
-                  {t("המצגת נשמרה בתיק ותיפתח שוב ללא יצירה מחדש.")}
+                  {t("ההסבר החזותי נשמר בתיק וייפתח שוב ללא יצירה מחדש.")}
                   <br />
                   {new Date(data.presentation.created_at).toLocaleString(
                     locale,
@@ -340,7 +340,7 @@ export function ClinicalInsights({
                   disabled={busy}
                   onClick={() => void action("review_presentation")}
                 >
-                  {t("סימון המצגת כנבדקה לשיחה עם המטופל")}
+                  {t("סימון ההסבר החזותי כנבדק לשיחה עם המטופל")}
                 </button>
               )}
               <span className="artifact-meta">
@@ -352,12 +352,12 @@ export function ClinicalInsights({
           ) : (
             <div className="presentation-proposal">
               <span className="eyebrow">
-                {t("הצעה לפרופ׳ מאור — טרם נוצרה מצגת")}
+                {t("הצעה לפרופ׳ מאור — טרם נוצר הסבר חזותי")}
               </span>
               <h3>
                 {canIllustrate
                   ? t("אפשר להכין הסבר חזותי מהמסמכים.")
-                  : t("אין עדיין בסיס מספק למצגת חזותית.")}
+                  : t("אין עדיין בסיס מספק להסבר חזותי.")}
               </h3>
               <p>
                 {canIllustrate
@@ -368,7 +368,7 @@ export function ClinicalInsights({
               </p>
               {canIllustrate && (
                 <>
-                  <h4>{t("מה המצגת תציג")}</h4>
+                  <h4>{t("מה ההסבר החזותי יציג")}</h4>
                   <ol>
                     {summary.presentation.slides.map((slide, i) => (
                       <li key={i}>
@@ -382,7 +382,7 @@ export function ClinicalInsights({
                   </ol>
                   <p className="clinical-format-note">
                     {t(
-                      "התרשימים יציגו רק מיקומים ושינויים תפקודיים הנתמכים בממצאים המצוטטים. שקפים ללא מיפוי נתמך יציגו את הממצאים ללא פגיעה משוערת. המצגת מיועדת להצגה בהנחיית הרופא במהלך הייעוץ ותישמר רק לאחר בקשה.",
+                      "התרשימים יציגו רק מיקומים ושינויים תפקודיים הנתמכים בממצאים המצוטטים. שקפים ללא מיפוי נתמך יציגו את הממצאים ללא פגיעה משוערת. ההסבר החזותי מיועד להצגה בהנחיית הרופא במהלך הייעוץ ויישמר רק לאחר בקשה.",
                     )}
                   </p>
                   <button
@@ -391,11 +391,15 @@ export function ClinicalInsights({
                     onClick={() => void action("create_presentation")}
                   >
                     <Presentation size={18} />
-                    {busy ? t("יוצרים ושומרים את המצגת…") : t("יצירת מצגת")}
+                    {busy
+                      ? t("יוצרים ושומרים את ההסבר החזותי…")
+                      : t("יצירת הסבר חזותי")}
                   </button>
                   {!clinician && (
                     <p className="form-note">
-                      {t("יצירת מצגת ואישור תוכן זמינים לרופא או למנהל בלבד.")}
+                      {t(
+                        "יצירת הסבר חזותי ואישור תוכן זמינים לרופא או למנהל בלבד.",
+                      )}
                     </p>
                   )}
                 </>

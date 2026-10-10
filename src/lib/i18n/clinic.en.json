@@ -102,7 +102,7 @@
   "בדקתי שהמסמכים שייכים לתיק הבדיקה, ואני מאשר/ת עיבוד באמצעות שירות AI מאושר.": "I checked that the documents belong to this test case and approve processing through the approved AI service.",
   "שומרים ומכינים…": "Saving and preparing…",
   "הכנת סיכום לקראת הביקור": "Prepare pre-visit summary",
-  "לאחר תחילת הניתוח, המסמכים ננעלים כדי לשמור על התאמה לסיכום. המצגת תוצע ותיווצר רק לפי בקשת הרופא.": "When analysis starts, the documents are locked to keep the summary consistent. A presentation will be proposed and created only at the doctor's request.",
+  "לאחר תחילת הניתוח, המסמכים ננעלים כדי לשמור על התאמה לסיכום. ההסבר החזותי יוצע וייווצר רק לפי בקשת הרופא.": "When analysis starts, the documents are locked to keep the summary consistent. A visual explanation will be proposed and created only at the doctor's request.",
   "המסמכים כבר נשלחו לניתוח. להוספת מסמכים פתחו ביקור חדש.": "These documents have already been submitted for analysis. Create a new visit to add documents.",
   "יש להחיל את עדכון מסד הנתונים לקליטת מסמכים במרפאה.": "Apply the database update for clinic document intake.",
   "מסמך רפואי": "Medical document",

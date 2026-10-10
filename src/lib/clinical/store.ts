@@ -15,7 +15,7 @@ function checked<T>(r: { data: T; error: unknown }): T {
     throw new PortalError(
       503,
       "ANALYSIS_STORAGE",
-      "יש להשלים את חיבור רשומות הסיכום והמצגות במערכת.",
+      "יש להשלים את חיבור רשומות הסיכום וההסברים החזותיים במערכת.",
     );
   return r.data;
 }

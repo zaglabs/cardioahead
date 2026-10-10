@@ -53,7 +53,7 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
     <div className="presentation-viewer" ref={container}>
       <div className="presentation-toolbar">
         <span>
-          {t("מצגת שמורה בתיק")} · {index + 1}/{count}
+          {t("הסבר חזותי שמור בתיק")} · {index + 1}/{count}
         </span>
         <button
           className="icon-button"
@@ -315,7 +315,7 @@ export function PresentationViewer({ record }: { record: PresentationRecord }) {
       </div>
       <p className="presentation-disclaimer">
         {t(
-          "מצגת לעיון הרופא ולהצגה במהלך הייעוץ לפי שיקול דעתו. הממצאים והסימונים נשענים על המקורות המצוטטים; התרשימים סכמטיים ודורשים אימות קליני.",
+          "הסבר חזותי לעיון הרופא ולהצגה במהלך הייעוץ לפי שיקול דעתו. הממצאים והסימונים נשענים על המקורות המצוטטים; התרשימים סכמטיים ודורשים אימות קליני.",
         )}
       </p>
     </div>

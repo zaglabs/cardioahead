@@ -531,7 +531,7 @@ function ClinicWorkspace({
                     className={tab === "presentation" ? "active" : ""}
                   >
                     <Heart size={15} />
-                    {t("המחשה / מצגת")}
+                    {t("הסבר חזותי")}
                   </button>
                 </div>
                 <div className="report-panel">

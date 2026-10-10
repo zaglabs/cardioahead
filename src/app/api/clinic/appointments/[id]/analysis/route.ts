@@ -91,7 +91,7 @@ export async function POST(
       throw new PortalError(
         403,
         "CLINICIAN_REQUIRED",
-        "יצירת מצגת ואישור תוכן זמינים לרופא או למנהל בלבד.",
+        "יצירת הסבר חזותי ואישור תוכן זמינים לרופא או למנהל בלבד.",
       );
     if (action === "create_presentation") {
       const existing = await db.presentation(id);
@@ -108,7 +108,7 @@ export async function POST(
         throw new PortalError(
           409,
           "NO_PROPOSAL",
-          "אין עדיין הצעת מצגת מתאימה המבוססת על המסמכים.",
+          "אין עדיין הצעה מתאימה להסבר חזותי המבוססת על המסמכים.",
         );
       const saved = await db.savePresentation(id, staff.id, {
         renderer_version: 1,
