@@ -1,3 +1,4 @@
+import { issueInvitation } from "@/lib/invitations/store";
 import { randomUUID } from "node:crypto";
 import { getStore } from "@/lib/portal/store";
 import {
@@ -72,19 +73,16 @@ export async function POST(request: Request) {
       created_at: new Date().toISOString(),
       submitted_at: null,
     };
-    await getStore().createAppointment(appointment);
-    if (manual)
+    if (manual) {
+      await getStore().createAppointment(appointment);
       return json({ appointment: appointmentView(appointment, []) }, 201);
+    }
+    const issued = await issueInvitation(staff.id, appointment, language);
     return json(
       {
-        appointment: appointmentView(appointment, []),
-        invitationUrl:
-          (process.env.NEXT_PUBLIC_SITE_URL || new URL(request.url).origin) +
-          "/invite/" +
-          token +
-          "?lang=" +
-          language,
-        code,
+        appointment: appointmentView(issued.appointment, []),
+        invitationUrl: issued.invitationUrl,
+        code: issued.code,
       },
       201,
     );

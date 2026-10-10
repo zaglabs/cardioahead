@@ -6,7 +6,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("פרטיות ושימוש במידע") };
 }
 export default async function PrivacyPage() {
-  const { t } = await getTranslations();
+  const { t, language } = await getTranslations();
+  const w = (he: string, en: string) => (language === "he" ? he : en);
 
   return (
     <>
@@ -15,12 +16,37 @@ export default async function PrivacyPage() {
         <span className="eyebrow">{t("פרטיות ושקיפות")}</span>
         <h1>{t("פרטיות ושימוש במידע.")}</h1>
         <p className="prose-lead">
-          {t("CardioAhead נמצא בשלב בדיקות עם מסמכים פיקטיביים בלבד.")}
+          {w(
+            "CardioAhead נמצא בשלב הרצה. העלאת PDF ידנית מוגבלת למסמכי הבדיקה; ייבוא מכללית זמין בהרצה מודרכת במחשב ובהסכמה מפורשת.",
+            "CardioAhead is a pilot. Manual PDF uploads accept the reviewed test documents; Clalit import is available through a guided desktop pilot with explicit consent.",
+          )}
         </p>
         <h2>{t("המידע שנאסף בתהליך")}</h2>
         <p>
           {t(
-            "צוות המרפאה יוצר כינוי מטופל ומועד ביקור. בעת העלאה נשמרים הקובץ, שמו, גודלו וזמן ההעלאה. בשלב הנוכחי המערכת מקבלת רק את מסמכי הבדיקה הפיקטיביים שפורסמו באתר. אין להזין שמות, פרטי זיהוי או מסמכים של מטופלים אמיתיים.",
+            "צוות המרפאה יוצר כינוי מטופל ומועד ביקור. העלאת PDF ידנית נשארת מוגבלת למסמכי הבדיקה הפיקטיביים. בעת העלאה נשמרים הקובץ, שמו, גודלו וזמן ההעלאה. ייבוא אישי מכללית נעשה בנפרד, בהסכמה מפורשת, כמתואר בהמשך.",
+          )}
+        </p>
+        <h2>
+          {w("ייבוא מכללית בהסכמת המטופל", "Patient-consented Clalit import")}
+        </h2>
+        <p>
+          {w(
+            "אחרי אימות הקישור והקוד, המטופל מאשר שהחשבון שייך לו ואת העברת המידע שנאסף ל־Claude של Anthropic להכנת סיכום. האספן המקומי פותח דפדפן פרטי והמטופל מתחבר לכללית בעצמו. סיסמאות וקודי התחברות לכללית אינם נאספים או נשלחים ל־CardioAhead. האיסוף מוגבל למבנים הנתמכים ומדווח על פערים.",
+            "After verifying the invitation link and code, the patient confirms self-account scope and explicitly approves sending collected information to Anthropic’s Claude to prepare a summary. The local collector opens a private browser and the patient signs into Clalit themselves. Clalit passwords and login codes are not collected or sent to CardioAhead. Collection is limited to supported layouts and reports its gaps.",
+          )}
+        </p>
+        <p>
+          {w(
+            "המידע המלא שנאסף מוחזק זמנית בזיכרון האספן והעיבוד. לא מצורפים מסמכים מקוריים מכללית. בתיק המרפאה נשמרים הסיכום, פרטי מקור וקטעי ראיה קצרים. המידע הזמני באספן נמחק לאחר העברה שאושרה, בסגירה או בתפוגה. הדפדפן, מערכת ההפעלה וספקי השירות מפעילים את מנגנוני התפעול הרגילים שלהם; אין כאן הבטחה לאפס שמירה בכל מערכת.",
+            "Full collected text is held temporarily in collector and processing memory. Original Clalit documents are not attached. The clinic record retains the summary, provenance and short evidence excerpts. Collector buffers are cleared after an accepted transfer, at shutdown or expiry. Browsers, operating systems and service providers have their normal handling; this is not a guarantee of zero retention in every system.",
+          )}
+        </p>
+        <h2>{w("מעקב אחר הזמנות", "Invitation activity tracking")}</h2>
+        <p>
+          {w(
+            "צפייה בקישור וכניסה מאומתת נרשמות בנפרד. נספרות העלאות שנשמרו בפועל, ורשומות מכללית נחשבות כמתקבלות רק לאחר אימות מבנה המידע וההרשאה. הצלחת ייבוא נרשמת כשהסיכום נשמר. קישורים וקודים חדשים מוצפנים ונחשפים רק לצוות מורשה; בקישורים ישנים שאין להם עותק מוצפן נדרש קישור חלופי. שליחה מחדש כוללת קישור וקוד ללא ממצאים רפואיים.",
+            "Link views and verified access are tracked separately. Only saved uploads are counted; Clalit records are recorded as received after validating data structure and authorization. Successful import is recorded when the summary is saved. New links and codes are encrypted and revealed only to authorized staff; older links without an encrypted copy require replacement. Resend emails contain the invitation link and code without medical findings.",
           )}
         </p>
         <h2>{t("גישה למסמכים")}</h2>
@@ -49,7 +75,7 @@ export default async function PrivacyPage() {
         <h2>{t("סיכום באמצעות AI")}</h2>
         <p>
           {t(
-            "בשלב הבדיקות, רק קובצי PDF פיקטיביים שאושרו למערכת נשלחים לשירות AI שנבחר ואושר, Claude או OpenAI. נשמרת טיוטת סיכום עם הפניות למסמכי המקור ומידע חסר לבדיקה. ההסבר החזותי מוצע לרופא ונוצר רק לאחר בקשה מפורשת, ואז נשמר בתיק. הסיכום וההמחשה דורשים בדיקת רופא ואינם מהווים אבחנה או תכנית טיפול עצמאית.",
+            "קובצי PDF פיקטיביים שאושרו נשלחים לשירות AI שנבחר ואושר, Claude או OpenAI. מידע שנאסף מכללית נשלח ל־Claude בלבד, בהסכמה מפורשת של המטופל. נשמרת טיוטת סיכום עם הפניות ומידע חסר לבדיקה. ההסבר החזותי נוצר רק לאחר בקשה מפורשת של הרופא. הסיכום וההמחשה דורשים בדיקת רופא ואינם מהווים אבחנה או תכנית טיפול עצמאית.",
           )}
         </p>
         <h2>{t("מסירת סיכום ביקור מאושר")}</h2>

@@ -116,3 +116,11 @@ A separate scoped, consented personal-import flow is available for the protected
 Apply migration 009 (AI settings) and migration 010 (medical imports) once in order. Keep ANTHROPIC_API_KEY as a sensitive server-only Vercel variable. Source processing for this flow always uses consent-bound Claude; API keys are never saved in clinical tables. No extra environment key or public local endpoint is needed.
 
 See [Clalit personal collector instructions](docs/clalit-pilot.md). Run the local collector from the installed Node/Playwright environment using npm run clalit:pilot. Sign in yourself, use a new manual card in the clinic space, and review the selected sources in the private local connection before importing.
+
+## Invitation Links and patient Clalit desktop pilot
+
+The clinic sidebar includes an Invitation Links management page. New links/codes are stored encrypted and disclosed only on authorized staff actions. Historical links without recoverable secrets have an explicit replacement flow. Search, filters, resend, expiry extension, revocation and invitation deletion use server-recorded activity. Deleting an invitation preserves the patient card.
+
+The invitation page presents large Upload Documents and Import from Clalit choices in Hebrew and English. The guided Clalit pilot uses a portable Windows collector with installed Chrome; mobile users have upload/help alternatives. PIN verification, self-account attestation and explicit Anthropic consent scope the import. Connections and successful imports are recorded from actual saved data, not button clicks.
+
+Apply migration 011 once. Enable CARDIOAHEAD_ENABLE_PATIENT_CLALIT_PILOT in Production after the tested collector asset is published. See [the invitation workflow](docs/invitation-flow.md). Original Clalit documents are not attached; manual PDF uploads remain in fictional-test scope.

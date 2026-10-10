@@ -382,7 +382,7 @@ export function MedicalRecords({
         <>
           <div className="medical-import-meta">
             <span className="status-pill">
-              {w("ייבוא אישי מכללית", "Personal Clalit import")}
+              {record.origin_kind==="patient" ? w("ייבוא מכללית באישור המטופל","Patient-authorized Clalit import") : w("ייבוא אישי מכללית", "Personal Clalit import")}
             </span>
             <span>
               {record.bundle.records.length} {w("מקורות", "sources")} ·{" "}

@@ -1,6 +1,8 @@
 "use client";
 import { useLanguage } from "@/components/language-provider";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { PatientClalitImport } from "./patient-clalit-import";
+import { HeartLoader } from "./heart-loader";
 import { DocumentDropzone } from "./document-dropzone";
 import Link from "next/link";
 import { HeartIllustration } from "./heart-illustration";
@@ -12,6 +14,9 @@ import {
   LockKeyhole,
   CalendarDays,
   LogOut,
+  Upload,
+  Link2,
+  Monitor,
 } from "lucide-react";
 import type { AppointmentView, DocumentView } from "@/lib/portal/types";
 type QueueItem = {
@@ -26,7 +31,12 @@ export function PatientPortal({
   token: string;
   ready: boolean;
 }) {
-  const { t, locale } = useLanguage();
+  const { t, locale, language } = useLanguage();
+  const w = (he: string, en: string) => (language === "he" ? he : en);
+  const [method, setMethod] = useState<"choice" | "upload" | "clalit">(
+    "choice",
+  );
+  const [receivedImport, setReceivedImport] = useState(false);
 
   const [code, setCode] = useState("");
   const [appointment, setAppointment] = useState<AppointmentView | null>(null);
@@ -35,6 +45,23 @@ export function PatientPortal({
   const [error, setError] = useState("");
   const [confirmed, setConfirmed] = useState(false);
   const [step, setStep] = useState(0);
+  useEffect(() => {
+    let sent = false;
+    const record = () => {
+      if (!sent && document.visibilityState === "visible") {
+        sent = true;
+        void fetch("/api/patient/invitation-view", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+          keepalive: true,
+        }).catch(() => {});
+      }
+    };
+    record();
+    document.addEventListener("visibilitychange", record);
+    return () => document.removeEventListener("visibilitychange", record);
+  }, [token]);
   async function api(url: string, init?: RequestInit) {
     const response = await fetch(url, init);
     const data = await response.json();
@@ -53,7 +80,20 @@ export function PatientPortal({
       });
       const data = await api("/api/patient/appointment");
       setAppointment(data.appointment);
-      setStep(data.appointment.status === "invited" ? 1 : 3);
+      setMethod(
+        data.appointment.personal_import_source
+          ? "clalit"
+          : data.appointment.documents.length
+            ? "upload"
+            : "choice",
+      );
+      setStep(
+        data.appointment.personal_import_source
+          ? 1
+          : data.appointment.status === "invited"
+            ? 1
+            : 3,
+      );
       setCode("");
     } catch (e) {
       setError(e instanceof Error ? e.message : t("לא הצלחנו לאמת את הכניסה."));
@@ -76,6 +116,7 @@ export function PatientPortal({
       try {
         const data = new FormData();
         data.append("file", files[i]);
+        data.append("appointment_id", appointment.id);
         const result = await api("/api/patient/documents", {
           method: "POST",
           body: data,
@@ -127,6 +168,8 @@ export function PatientPortal({
       setQueue([]);
       setConfirmed(false);
       setStep(0);
+      setMethod("choice");
+      setReceivedImport(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : t("לא הצלחנו לצאת."));
     } finally {
@@ -203,6 +246,26 @@ export function PatientPortal({
                 </span>
               </div>
             </div>
+            <div className="patient-option-preview">
+              <div>
+                <strong>{w("העלאת מסמכים", "Upload Documents")}</strong>
+                <span>
+                  {w(
+                    "לקבצים שכבר שמורים אצלכם במחשב או בטלפון.",
+                    "For files already saved on your computer or phone.",
+                  )}
+                </span>
+              </div>
+              <div>
+                <strong>{w("ייבוא מכללית", "Import from Clalit")}</strong>
+                <span>
+                  {w(
+                    "איסוף מודרך במחשב Windows עם Chrome. התחברו לכללית בעצמכם.",
+                    "Guided collection on a Windows computer with Chrome. You sign into Clalit yourself.",
+                  )}
+                </span>
+              </div>
+            </div>
             <p className="panel-description">
               {t("הזינו את קוד הגישה בן שש הספרות שקיבלתם מצוות המרפאה.")}
             </p>
@@ -254,8 +317,18 @@ export function PatientPortal({
               <li>
                 <span>2</span>
                 <div>
-                  <strong>{t("מצרפים את המסמכים")}</strong>
-                  <p>{t("אפשר לבחור כמה קובצי PDF מהמחשב או מהטלפון.")}</p>
+                  <strong>
+                    {w(
+                      "בוחרים איך להעביר מידע",
+                      "Choose how to send your records",
+                    )}
+                  </strong>
+                  <p>
+                    {w(
+                      "אפשר להעלות קובצי PDF, או להשתמש בייבוא המודרך מכללית במחשב.",
+                      "Upload PDF files, or use the guided Clalit import on a computer.",
+                    )}
+                  </p>
                 </div>
               </li>
               <li>
@@ -307,7 +380,91 @@ export function PatientPortal({
             <p className="form-note">{t("ההעלאה אינה פנייה רפואית דחופה.")}</p>
           </div>
         )}
-        {appointment && step === 1 && (
+        {appointment && step === 1 && method === "choice" && (
+          <>
+            <span className="eyebrow">{w("צעד 2 מתוך 3", "Step 2 of 3")}</span>
+            <h2>
+              {w(
+                "איך תרצו להעביר את המידע למרפאה?",
+                "How would you like to send your records?",
+              )}
+            </h2>
+            <p className="patient-method-lead">
+              {w(
+                "בחרו אפשרות אחת. אפשר להיעזר בבן משפחה או בצוות המרפאה.",
+                "Choose one option. A family member or the clinic can help.",
+              )}
+            </p>
+            <div className="patient-method-choices">
+              <button
+                className="patient-method-choice"
+                onClick={() => setMethod("upload")}
+              >
+                <Upload size={36} />
+                <strong>{w("העלאת מסמכים", "Upload Documents")}</strong>
+                <span>
+                  {w(
+                    "לקובצי PDF שכבר שמורים במחשב או בטלפון שלכם.",
+                    "For PDF files already saved on your computer or phone.",
+                  )}
+                </span>
+                <span className="patient-method-action">
+                  {w("בחירת קבצים", "Choose files")}
+                  <ArrowLeft size={21} />
+                </span>
+              </button>
+              <button
+                className="patient-method-choice patient-method-clalit"
+                onClick={() => setMethod("clalit")}
+              >
+                <Link2 size={36} />
+                <strong>{w("ייבוא מכללית", "Import from Clalit")}</strong>
+                <span>
+                  {w(
+                    "איסוף מודרך מהחשבון שלכם, ללא צורך לשמור קבצים בעצמכם.",
+                    "Guided collection from your own account, without saving files yourself.",
+                  )}
+                </span>
+                <small>
+                  <Monitor size={18} />
+                  {w(
+                    "הרצה במחשב Windows עם Chrome",
+                    "Desktop pilot: Windows with Chrome",
+                  )}
+                </small>
+                <span className="patient-method-action">
+                  {w("התחברות לכללית", "Connect Clalit")}
+                  <ArrowLeft size={21} />
+                </span>
+              </button>
+            </div>
+            <div className="patient-method-help">
+              <strong>
+                {w(
+                  "לא בטוחים באיזו אפשרות לבחור?",
+                  "Not sure which option to choose?",
+                )}
+              </strong>
+              <p>
+                {w(
+                  "אם הקבצים אצלכם — בחרו בהעלאה. אם המידע נמצא רק בכללית — אפשר להשתמש בייבוא המודרך במחשב. בטלפון, השתמשו בהעלאה או פנו למרפאה לעזרה.",
+                  "If you already have the files, choose upload. If they are only in Clalit, use the guided computer import. On a phone, choose upload or ask the clinic for help.",
+                )}
+              </p>
+            </div>
+          </>
+        )}
+        {appointment && step === 1 && method === "clalit" && (
+          <PatientClalitImport
+            appointment={appointment}
+            onBack={() => setMethod("choice")}
+            onReceived={() => {
+              setReceivedImport(true);
+              setStep(3);
+            }}
+          />
+        )}
+        {appointment && step === 1 && method === "upload" && (
           <>
             <span className="eyebrow">{t("צעד 2 מתוך 3")}</span>
             <h2>{t("המסמכים לקראת הביקור.")}</h2>
@@ -340,6 +497,13 @@ export function PatientPortal({
                 )}
               </p>
             </div>
+            <button
+              className="text-button patient-back-button"
+              onClick={() => setMethod("choice")}
+              disabled={busy}
+            >
+              {w("חזרה לבחירת האפשרות", "Back to your options")}
+            </button>
             <DocumentDropzone
               busy={busy}
               onFiles={(files) => void upload(files)}
@@ -460,8 +624,22 @@ export function PatientPortal({
               <Check size={32} />
             </span>
             <span className="eyebrow">{t("ההכנה הושלמה")}</span>
-            <h2>{t("המסמכים התקבלו.")}</h2>
-            <p>{t("המסמכים שצירפתם זמינים כעת לצוות המרפאה לקראת הפגישה.")}</p>
+            <h2>
+              {receivedImport
+                ? w(
+                    "המידע מכללית התקבל.",
+                    "Your Clalit information was received.",
+                  )
+                : t("המסמכים התקבלו.")}
+            </h2>
+            <p>
+              {receivedImport
+                ? w(
+                    "הסיכום וההפניות למקורות זמינים לצוות המרפאה לקראת הפגישה.",
+                    "The summary and source references are available to clinic staff before your visit.",
+                  )
+                : t("המסמכים שצירפתם זמינים כעת לצוות המרפאה לקראת הפגישה.")}
+            </p>
             <div className="info-box">
               <p>
                 {t(
@@ -473,6 +651,12 @@ export function PatientPortal({
               {t("חזרה לאתר")}
               <ArrowLeft size={17} />
             </Link>
+          </div>
+        )}
+        {busy && (
+          <div className="patient-flow-loading" role="status">
+            <HeartLoader />
+            <span>{w("מעבדים את הבקשה", "Processing your request")}</span>
           </div>
         )}
         {error && (

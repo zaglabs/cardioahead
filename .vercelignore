@@ -11,3 +11,5 @@ output/
 scripts/
 
 .codex-remote-attachments/
+
+.collector-dist/

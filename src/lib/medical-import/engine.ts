@@ -1,3 +1,4 @@
+import { invitationById } from "@/lib/invitations/store";
 import "server-only";
 import { medicalVisualFocus } from "./visual";
 import { medicalEvidenceBundle } from "./schema.mjs";
@@ -49,6 +50,25 @@ export async function requestPersonalClaudeJSON(
   timeoutMs = 170000,
 ) {
   const owner = await getStore().staff(approved.owner_id);
+  if (approved.origin_kind === "patient") {
+    const invitation = approved.invitation_id
+        ? await invitationById(approved.invitation_id)
+        : null,
+      card = await getStore().appointment(approved.appointment_id);
+    if (
+      approved.patient_consent_version !== "clalit-patient-v1" ||
+      !invitation ||
+      !card ||
+      invitation.appointment_id !== card.id ||
+      invitation.token_hash !== card.token_hash ||
+      invitation.revoked_at ||
+      invitation.deleted_at ||
+      card.revoked_at ||
+      card.deletion_requested_at ||
+      Date.parse(card.expires_at) <= Date.now()
+    )
+      throw new Error("PATIENT_AI_CONSENT_REQUIRED");
+  }
   if (
     !owner ||
     !isAdmin(owner) ||
@@ -143,7 +163,16 @@ export async function runMedicalSummary(
         .map(([id]) => id),
     };
     const result = await requestPersonalClaudeJSON(
-      importedSummaryInstructions,
+      record.origin_kind === "patient"
+        ? importedSummaryInstructions.replace(
+            "These are REAL personal-test records with the owner" +
+              String.fromCharCode(39) +
+              "s consent, not fictional files.",
+            "These are patient records imported with the patient" +
+              String.fromCharCode(39) +
+              "s explicit consent to Claude processing, not fictional files.",
+          )
+        : importedSummaryInstructions,
       payload,
       medicalSummarySchema,
       record,
@@ -181,6 +210,7 @@ export async function runMedicalSummary(
       "AI_INCOMPLETE",
       "AI_NOT_CONFIGURED",
       "PERSONAL_AI_CONSENT_REQUIRED",
+      "PATIENT_AI_CONSENT_REQUIRED",
       "INVALID_IMPORTED_SUMMARY",
       "IMPORT_NOT_FOUND",
     ];

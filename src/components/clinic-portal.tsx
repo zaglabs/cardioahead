@@ -1,4 +1,5 @@
 "use client";
+import { ClinicSidebar } from "./clinic-sidebar";
 import { useLanguage } from "@/components/language-provider";
 import { useCallback, useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
@@ -19,7 +20,6 @@ import {
   Clock3,
   FileText,
   Heart,
-  LayoutDashboard,
   Link2,
   LogOut,
   RefreshCw,
@@ -44,6 +44,7 @@ const labels = {
 export function ClinicPortal(props: {
   staff: Staff;
   initialAppointments: AppointmentView[];
+  initialCreation?: boolean;
 }) {
   return (
     <DocumentPreviewProvider>
@@ -54,9 +55,11 @@ export function ClinicPortal(props: {
 function ClinicWorkspace({
   staff,
   initialAppointments,
+  initialCreation = false,
 }: {
   staff: Staff;
   initialAppointments: AppointmentView[];
+  initialCreation?: boolean;
 }) {
   const { t, locale, language } = useLanguage();
   const openDocument = useDocumentPreview();
@@ -74,7 +77,7 @@ function ClinicWorkspace({
   const [tab, setTab] = useState<
     "documents" | "report" | "presentation" | "evidence" | "lifestyle" | "visit"
   >("documents");
-  const [showForm, setShowForm] = useState(false);
+  const [showForm, setShowForm] = useState(initialCreation);
   const [name, setName] = useState(t("מטופל בדיקה 001"));
   const [date, setDate] = useState("");
   const [invitationLanguage, setInvitationLanguage] = useState<"he" | "en">(
@@ -295,21 +298,7 @@ function ClinicWorkspace({
   );
   return (
     <div className="clinic-layout">
-      <aside className="clinic-sidebar">
-        <span className="eyebrow">{t("פרופ׳ אלעד מאור")}</span>
-        <h2>{t("סביבת המרפאה")}</h2>
-        <div className="sidebar-selected">
-          <LayoutDashboard size={18} />
-          {t("הכנה לביקורים")}
-        </div>
-        <div className="clinic-sidebar-bottom">
-          <span className="avatar">{t("מ")}</span>
-          <div>
-            <strong>{t("צוות המרפאה")}</strong>
-            <small dir="ltr">{staff.email}</small>
-          </div>
-        </div>
-      </aside>
+      <ClinicSidebar staff={staff} active="clinic" />
       <div className="clinic-workspace">
         <div className="clinic-heading">
           <div>

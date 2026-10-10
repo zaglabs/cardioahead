@@ -26,6 +26,8 @@ export type Appointment = {
   submitted_at: string | null;
 };
 export type DocumentRecord = {
+  invitation_id?: string | null;
+  upload_origin?: "patient" | "staff" | "unknown";
   id: string;
   appointment_id: string;
   filename: string;

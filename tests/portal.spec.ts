@@ -130,6 +130,7 @@ test("clinic creates an invitation; patient uploads two PDFs; clinic retrieves i
   await patient.goto(url);
   await patient.getByLabel("קוד גישה", { exact: true }).fill(pin);
   await patient.getByRole("button", { name: "כניסה למרחב האישי" }).click();
+  await patient.getByRole("button", { name: /העלאת מסמכים/ }).click();
   await patient.getByLabel("בחירת קובצי PDF").setInputFiles([fixture, second]);
   await expect(patient.getByText("2 מסמכים נשמרו")).toBeVisible();
   expect(

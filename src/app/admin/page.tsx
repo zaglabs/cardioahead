@@ -12,7 +12,12 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t("סביבת המרפאה") };
 }
 export const dynamic = "force-dynamic";
-export default async function AdminPage() {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ create?: string }>;
+}) {
+  const initialCreation = (await searchParams).create === "invitation";
   let identity = null;
   if (configured()) {
     try {
@@ -32,7 +37,11 @@ export default async function AdminPage() {
   return (
     <PortalFrame>
       {staff ? (
-        <ClinicPortal staff={staff} initialAppointments={initialAppointments} />
+        <ClinicPortal
+          staff={staff}
+          initialAppointments={initialAppointments}
+          initialCreation={initialCreation}
+        />
       ) : identity ? (
         <StaffPending email={identity.email} />
       ) : (

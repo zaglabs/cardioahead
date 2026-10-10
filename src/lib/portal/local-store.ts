@@ -27,6 +27,8 @@ import type {
   VisitWorkspace,
 } from "@/lib/visit/types";
 type State = {
+  invitationLinks?: import("@/lib/invitations/types").InvitationLink[];
+  invitationSends?: import("@/lib/invitations/types").InvitationSend[];
   medicalImports?: import("@/lib/medical-import/types").MedicalImport[];
   importGrants?: import("@/lib/medical-import/types").ImportGrant[];
   aiSettings?: import("@/lib/clinical/settings").AISettings;
@@ -159,6 +161,12 @@ const persistDocument = (
     );
     await mkdir(path.dirname(file), { recursive: true });
     await writeFile(file, bytes, { mode: 0o600, flag: "wx" });
+    record.upload_origin = actor ? "staff" : "patient";
+    if (!actor)
+      record.invitation_id =
+        (s.invitationLinks || []).find(
+          (i) => i.appointment_id === a.id && i.token_hash === a.token_hash,
+        )?.id || null;
     s.documents.push(record);
     s.audit.push({
       event: actor ? "staff_document_uploaded" : "document_uploaded",
@@ -203,6 +211,13 @@ export const localStore: PortalStore = {
         return false;
       }
       a.failed_attempts = 0;
+      const invitation = (s.invitationLinks || []).find(
+        (i) => i.appointment_id === a.id && i.token_hash === a.token_hash,
+      );
+      if (invitation) {
+        invitation.first_verified_at ||= new Date().toISOString();
+        invitation.last_verified_at = new Date().toISOString();
+      }
       s.sessions.push({
         ...session,
         appointment_id: a.id,

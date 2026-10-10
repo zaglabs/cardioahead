@@ -166,8 +166,24 @@ export async function acceptMedicalImport(
         !isAdmin(actor) ||
         !card ||
         card.deletion_requested_at ||
-        card.intake_mode !== "clinic" ||
-        card.created_by !== actor.id ||
+        (grant.origin_kind === "patient"
+          ? card.intake_mode !== "invitation" ||
+            Boolean(card.revoked_at) ||
+            Date.parse(card.expires_at) <= Date.now() ||
+            !(state.invitationLinks || []).some(
+              (i) =>
+                i.id === grant.invitation_id &&
+                i.token_hash === card.token_hash &&
+                !i.revoked_at &&
+                !i.deleted_at,
+            ) ||
+            !state.sessions.some(
+              (s) =>
+                s.session_hash === grant.patient_session_hash &&
+                s.appointment_id === card.id &&
+                Date.parse(s.expires_at) > Date.now(),
+            )
+          : card.intake_mode !== "clinic" || card.created_by !== actor.id) ||
         state.documents.some((doc) => doc.appointment_id === card.id)
       )
         throw new PortalError(
@@ -190,6 +206,10 @@ export async function acceptMedicalImport(
         appointment_id: card.id,
         owner_id: actor.id,
         provider: "clalit",
+        origin_kind: grant.origin_kind || "personal",
+        invitation_id: grant.invitation_id || null,
+        patient_consent_version:
+          grant.origin_kind === "patient" ? "clalit-patient-v1" : null,
         source_hash: sourceHash,
         bundle: medicalMetadataBundle(bundle),
         ai_consent: grant.ai_consent,
@@ -213,6 +233,11 @@ export async function acceptMedicalImport(
       if (!existing) (state.medicalImports ??= []).push(row);
       grant.used_at = new Date().toISOString();
       grant.import_id = row.id;
+      const invitation = (state.invitationLinks || []).find(
+        (i) => i.id === grant.invitation_id,
+      );
+      if (invitation)
+        invitation.clalit_connected_at ||= new Date().toISOString();
       card.personal_import_source = true;
       card.medical_records_count = bundle.records.length;
       if (card.status === "invited") {
@@ -300,6 +325,16 @@ export async function finishMedicalSummary(
         !row ||
         !card ||
         card.deletion_requested_at ||
+        (row.origin_kind === "patient" &&
+          (card.revoked_at ||
+            Date.parse(card.expires_at) <= Date.now() ||
+            !(state.invitationLinks || []).some(
+              (i) =>
+                i.id === row.invitation_id &&
+                i.token_hash === card.token_hash &&
+                !i.revoked_at &&
+                !i.deleted_at,
+            ))) ||
         row.status !== "generating" ||
         row.lease_token !== token ||
         Date.parse(row.lease_until || "") <= Date.now()
@@ -315,6 +350,10 @@ export async function finishMedicalSummary(
         lease_until: null,
         error_code: null,
       });
+      const invitation = (state.invitationLinks || []).find(
+        (i) => i.id === row.invitation_id,
+      );
+      if (invitation) invitation.latest_import_at = row.completed_at;
       return true;
     });
   return checked(
@@ -434,5 +473,105 @@ export async function saveMedicalVisual(
       p_actor: actor,
       p_visual: { slides },
     }),
+  );
+}
+
+export async function createPatientImportGrant(
+  sessionHash: string,
+  tokenHash: string,
+): Promise<ImportGrant> {
+  if (!localTestMode())
+    return checked(
+      await supabaseAdmin().rpc("create_patient_import_grant", {
+        p_session: sessionHash,
+        p_hash: tokenHash,
+        p_consent: true,
+      }),
+    ) as ImportGrant;
+  return localTransaction((state) => {
+    const session = state.sessions.find(
+        (s) =>
+          s.session_hash === sessionHash &&
+          s.kind === "patient" &&
+          Date.parse(s.expires_at) > Date.now(),
+      ),
+      card = state.appointments.find((a) => a.id === session?.appointment_id);
+    const invitation = (state.invitationLinks || []).find(
+      (i) =>
+        i.appointment_id === card?.id &&
+        i.token_hash === card?.token_hash &&
+        !i.revoked_at &&
+        !i.deleted_at,
+    );
+    const owner = state.staff.find(isAdmin);
+    if (
+      !session ||
+      !card ||
+      !invitation ||
+      !owner ||
+      card.intake_mode === "clinic" ||
+      card.revoked_at ||
+      card.deletion_requested_at ||
+      Date.parse(card.expires_at) <= Date.now() ||
+      state.documents.some((d) => d.appointment_id === card.id)
+    )
+      throw new PortalError(
+        409,
+        "PATIENT_IMPORT_UNAVAILABLE",
+        "אין אפשרות לייבא לתיק זה. פנו למרפאה.",
+      );
+    const grant: ImportGrant = {
+      token_hash: tokenHash,
+      appointment_id: card.id,
+      owner_id: owner.id,
+      ai_consent: true,
+      created_at: new Date().toISOString(),
+      expires_at: new Date(
+        Math.min(Date.now() + 45 * 60000, Date.parse(card.expires_at)),
+      ).toISOString(),
+      used_at: null,
+      import_id: null,
+      origin_kind: "patient",
+      invitation_id: invitation.id,
+      patient_session_hash: sessionHash,
+    };
+    (state.importGrants ??= []).push(grant);
+    state.audit.push({
+      event: "patient_clalit_consent",
+      appointment_id: card.id,
+      details: {
+        consent_version: "clalit-patient-v1",
+        ai_provider: "anthropic",
+      },
+      at: grant.created_at,
+    });
+    return grant;
+  });
+}
+export async function cancelPatientImportGrants(
+  appointment: string,
+  sessionHash: string,
+) {
+  if (localTestMode()) {
+    await localTransaction((state) => {
+      for (const grant of state.importGrants || [])
+        if (
+          grant.origin_kind === "patient" &&
+          grant.appointment_id === appointment &&
+          grant.patient_session_hash === sessionHash &&
+          !grant.used_at
+        )
+          grant.expires_at = new Date().toISOString();
+    });
+    return;
+  }
+  checked(
+    await supabaseAdmin()
+      .from("medical_import_grants")
+      .update({ expires_at: new Date().toISOString() })
+      .eq("origin_kind", "patient")
+      .eq("appointment_id", appointment)
+      .eq("patient_session_hash", sessionHash)
+      .is("used_at", null),
   );
 }

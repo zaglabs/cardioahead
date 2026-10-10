@@ -3539,3 +3539,83 @@ button.document-preview-row:focus-visible { outline: 3px solid #738e5b; outline-
 .medical-report-section{border-top:1px solid var(--line,#dce3d8);padding-top:1.2rem}.medical-report-section h4{font-size:1.25rem}.medical-fact{margin-block:1rem;min-width:0}.medical-fact p{margin-bottom:.4rem}.medical-fact details{font-size:.95rem}.medical-fact details summary{cursor:pointer;color:var(--muted,#62716b)}.medical-citation{padding:.6rem 0}.medical-loading{text-align:center;padding:2rem 1rem}.medical-loading .summary-heart-loader{margin-inline:auto}.medical-loading h3{margin-top:1rem}
 .medical-relevance-item{border-top:1px solid var(--line,#dce3d8);padding-block:1rem;display:grid;gap:.5rem}.medical-relevance-item .status-pill{justify-self:start}.medical-source-actions{display:flex;flex-wrap:wrap;align-items:center;gap:1rem}.medical-visual-proposal{padding:1.6rem;border-radius:18px;background:var(--soft,#f4f7f0)}.medical-visual-pair{display:grid;grid-template-columns:1fr 1fr;gap:1rem;text-align:center;min-width:0}.medical-visual-pair>div{min-width:0}.medical-visual-pair svg{width:100%;height:auto;max-height:440px}
 @media(max-width:640px){.medical-visual-pair{grid-template-columns:1fr}.medical-provenance{grid-template-columns:1fr}.medical-provenance dd{margin-bottom:.55rem}.medical-import-meta{align-items:flex-start;flex-direction:column}.medical-source-actions{align-items:stretch;flex-direction:column}.medical-source-actions button{justify-content:center}}
+/* Readable patient choices and invitation tracking. */
+.sidebar-navigation-link {display:flex;align-items:center;gap:10px;color:var(--muted);padding:14px 12px;border-radius:12px;text-decoration:none;margin-block:6px}
+.clinic-sidebar nav .sidebar-selected{display:flex;align-items:center;gap:10px;text-decoration:none}
+.clinic-mobile-navigation{display:none}
+.patient-method-lead{font-size:1.15rem;line-height:1.75;max-width:70ch}
+.patient-method-choices{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px;margin-block:28px}
+.patient-method-choice{display:flex;flex-direction:column;align-items:flex-start;text-align:start;gap:17px;padding:clamp(24px,3vw,36px);border:2px solid #dbe4d3;border-radius:22px;background:#fff;color:#183c31;cursor:pointer;min-height:290px;font:inherit;font-size:1.1rem;line-height:1.7;transition:border-color .15s,background .15s}
+.patient-method-choice:hover,.patient-method-choice:focus-visible{border-color:#517148;background:#f5f8f0;outline:3px solid #a2b591;outline-offset:3px}
+.patient-method-choice strong{font-size:1.45rem;line-height:1.35}
+.patient-method-choice small{font-size:1rem;display:flex;align-items:center;gap:10px}
+.patient-method-action{display:flex;align-items:center;justify-content:space-between;gap:18px;font-weight:650;margin-block-start:auto;width:100%;padding-top:15px;border-top:1px solid #dbe4d3}
+.patient-method-clalit{background:#f5f8f0}
+.patient-method-help,.patient-desktop-note,.patient-collector-help{padding:22px;border:1px solid #dce5d5;border-radius:18px;background:#f7f9f4;font-size:1.05rem;line-height:1.75;margin-block:22px}
+.patient-method-heading,.patient-desktop-note{display:flex;align-items:flex-start;gap:18px}
+.patient-method-heading h2{margin-block:8px 16px}
+.patient-clalit-steps{padding-inline-start:28px;display:grid;gap:24px;font-size:1.08rem;line-height:1.7}
+.patient-clalit-steps li{padding-inline-start:10px}
+.patient-large-button{min-height:58px;font-size:1.12rem;line-height:1.4;padding:17px 25px;white-space:normal;gap:12px}
+.patient-connect-button{width:100%;justify-content:center;margin-block:16px}
+.patient-clalit-consent{display:grid;gap:22px;font-size:1.08rem;line-height:1.75;padding-block:22px}
+.patient-clalit-consent label{display:flex;align-items:flex-start;gap:15px}
+.patient-clalit-consent input{width:24px;height:24px;min-width:24px;margin-top:6px;accent-color:#214a39}
+.patient-back-button{font-size:1.04rem;margin-block:15px}
+.patient-flow-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;text-align:center;background:#f6f8f1;border-radius:20px;padding:32px;margin-block:20px;font-size:1.08rem}
+.patient-import-received{background:#f2f7e9;border:1px solid #d6e2c9;padding:28px;border-radius:20px;margin-block:22px}
+.patient-option-preview{display:flex;flex-wrap:wrap;gap:16px;margin-block:20px}
+.patient-option-preview>div{flex:1;min-width:230px;padding:18px;border:1px solid #dbe4d3;border-radius:15px;display:grid;gap:8px;background:#f8faf5}
+.patient-option-preview strong{font-size:1.12rem}
+.patient-option-preview span{font-size:1rem;line-height:1.65}
+.invitation-management{min-width:0;width:100%}
+.invitation-filters{display:grid;grid-template-columns:minmax(240px,2fr) repeat(2,minmax(180px,1fr)) auto;gap:18px;align-items:end;margin-block:25px}
+.invitation-filters label{display:grid;gap:8px;font-size:.95rem}
+.invitation-filters input[type=search],.invitation-filters select{padding:13px 14px;min-height:50px;width:100%;border:1px solid #dce4d7;border-radius:12px;background:#fff;color:#234638;font:inherit;font-size:1rem}
+.invitation-search>div{position:relative}.invitation-search svg{position:absolute;inset-inline-start:14px;top:16px}.invitation-search input[type=search]{padding-inline-start:43px}
+.invitation-filters .invitation-checkbox{display:flex;align-items:center;gap:10px;align-self:center}
+.invitation-checkbox input{width:20px;height:20px;accent-color:#214a39}
+.invitation-tracking-note{font-size:.96rem;line-height:1.7;max-width:100ch}
+.invitation-table-scroll{border:1px solid #dce4d7;border-radius:20px;overflow:auto;background:white;max-width:100%;box-shadow:0 8px 25px rgba(29,60,40,.025)}
+.invitation-table{width:100%;min-width:1420px;border-collapse:collapse;font-size:.98rem;text-align:start}
+.invitation-table caption{padding:18px;text-align:start;font-size:.95rem;color:#536452;background:#f6f8f2}
+.invitation-table th{font-weight:650;background:#f3f7ef;padding:17px 14px;text-align:start;border-bottom:1px solid #dce4d7;white-space:nowrap}
+.invitation-table td{padding:20px 14px;vertical-align:top;text-align:start;border-bottom:1px solid #edf1e7;line-height:1.65}
+.invitation-table td strong,.invitation-table td small,.invitation-table td>span{display:block}
+.invitation-table td small{color:#61745e;font-size:.86rem;margin-block-start:7px}
+.invitation-masked{color:#5e7057;font-family:ui-monospace,monospace;font-size:.93rem}
+.invitation-row-tools{display:flex;align-items:center;gap:8px;margin-top:10px}
+.invitation-row-tools .text-button{font-size:.87rem;line-height:1.4;text-align:start}
+.invitation-actions{display:grid;gap:8px;min-width:150px}
+.invitation-actions button{display:flex;align-items:center;gap:9px;font:inherit;font-size:.92rem;text-align:start;background:#f6f8f2;border:1px solid #dce5d4;border-radius:10px;color:#285039;cursor:pointer;padding:10px 12px;min-height:42px}
+.invitation-actions button:hover{background:#e9f0df}
+.invitation-actions button.danger-text{color:#a24429}
+.invitation-status-expired,.invitation-status-revoked,.invitation-status-deleted{background:#f9eee7;color:#9b4a2f}
+.invitation-status-active{background:#eaf2df;color:#41632f}
+.invitation-loading{display:flex;align-items:center;gap:15px;padding:16px;line-height:1.6}
+.invitation-pagination{display:flex;align-items:center;gap:15px;justify-content:flex-end;flex-wrap:wrap;padding-block:22px}
+.invitation-pagination>span{margin-inline-end:auto}
+.invitation-empty{padding:35px;text-align:center}
+.invitation-success{display:flex;gap:12px;align-items:center;background:#f0f6e8;padding:18px;border-radius:14px;line-height:1.7}
+.invitation-modal-backdrop{position:fixed;inset:0;background:rgba(12,30,24,.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:22px}
+.invitation-modal{position:relative;background:#fff;padding:clamp(25px,4vw,42px);border-radius:24px;width:min(640px,100%);max-height:90dvh;overflow:auto;box-shadow:0 25px 100px rgba(0,0,0,.15);outline:none;display:grid;gap:20px;font-size:1.04rem;line-height:1.7}
+.invitation-modal h2{font-size:1.65rem;margin:0;padding-inline-end:40px}
+.invitation-modal label{display:grid;gap:8px}
+.invitation-modal label.consent{display:flex;align-items:flex-start;gap:14px}
+.invitation-modal input:not([type=checkbox]),.invitation-modal select{padding:15px;border:1px solid #d7e1cd;border-radius:12px;width:100%;font:inherit;font-size:1rem;color:#1d4435;background:white}
+.invitation-modal label.consent input{width:22px;height:22px;min-width:22px;margin-top:6px;accent-color:#214a39}
+.invitation-modal input.invitation-code{font-size:1.7rem;letter-spacing:6px}
+.invitation-close{position:absolute;inset-inline-end:17px;top:17px}
+@media(max-width:1150px){.invitation-filters{grid-template-columns:repeat(2,minmax(0,1fr))}.invitation-checkbox{grid-column:span 2}}
+@media(max-width:900px){.clinic-mobile-navigation{display:flex;align-items:center;gap:10px;padding:0 18px 18px;flex-wrap:wrap}.clinic-mobile-navigation a{display:flex;gap:9px;align-items:center;padding:12px 16px;border:1px solid #dbe5d2;border-radius:12px;color:#244b36;background:#fff;text-decoration:none;font-size:1rem;margin:0}.clinic-mobile-navigation .sidebar-selected{background:#eaf2df}.invitation-management .clinic-heading{align-items:stretch}.patient-method-choices{grid-template-columns:1fr}.patient-method-choice{min-height:240px}}
+@media(max-width:680px){.invitation-filters{grid-template-columns:1fr}.invitation-checkbox{grid-column:auto}.invitation-table{min-width:0;display:block}.invitation-table caption{display:block}.invitation-table thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0)}.invitation-table tbody{display:block}.invitation-table tr{display:block;margin:16px;padding:17px;border:1px solid #dce5d4;border-radius:18px;background:#fff}.invitation-table td{display:block;padding:13px 0;border-bottom:1px solid #edf1e7;font-size:1rem}.invitation-table td:before{content:attr(data-label);display:block;color:#65775e;font-size:.86rem;font-weight:600;margin-bottom:7px}.invitation-table td:first-child{font-size:1.16rem}.invitation-table td:last-child{border:0}.invitation-actions{grid-template-columns:repeat(2,minmax(0,1fr))}.invitation-actions button{font-size:.98rem;padding:12px;min-height:48px}.invitation-modal-backdrop{padding:12px}.patient-large-button{width:100%;justify-content:center}.patient-method-heading h2{font-size:1.7rem}.patient-method-choices{gap:18px}.patient-method-choice{padding:25px}.patient-clalit-steps{padding-inline-start:23px}.patient-desktop-note{padding:20px}.invitation-table-scroll{background:#f7f9f3}}
+.patient-clalit-import .primary-button,.invitation-management .primary-button,
+.patient-clalit-import .secondary-button,.invitation-management .secondary-button,
+.invitation-management .danger-button{display:inline-flex;align-items:center;justify-content:center;gap:12px;padding:14px 21px;min-height:51px;border-radius:13px;border:1px solid #254e39;font:inherit;font-size:1.02rem;line-height:1.5;text-decoration:none;cursor:pointer;background:#244d39;color:white}
+.patient-clalit-import .secondary-button,.invitation-management .secondary-button{background:white;color:#244d39;border-color:#d3dec8}
+.invitation-management .danger-button{background:#a3482e;border-color:#a3482e;color:white}
+.patient-clalit-import .primary-button:hover,.invitation-management .primary-button:hover{background:#183e2c}
+.patient-clalit-import button:disabled,.invitation-management button:disabled{opacity:.5;cursor:default}
+.invitation-table th:last-child,.invitation-table td:last-child{position:sticky;inset-inline-end:0;background:#fff;border-inline-start:1px solid #e2e9da;z-index:2}
+.invitation-table th:last-child{background:#f3f7ef}
+@media(max-width:680px){.invitation-table th:last-child,.invitation-table td:last-child{position:static;border-inline-start:0}.invitation-management .clinic-tools .primary-button{width:100%}}

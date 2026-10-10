@@ -32,6 +32,7 @@ export async function uploadDocument(
     );
   const data = await request.formData(),
     file = data.get("file");
+  if(data.has("appointment_id") && data.get("appointment_id")!==appointment.id)throw new PortalError(409,"PATIENT_SESSION_CHANGED","הכניסה השתנתה. הזינו שוב את קוד הגישה.");
   if (
     !(file instanceof File) ||
     !file.size ||

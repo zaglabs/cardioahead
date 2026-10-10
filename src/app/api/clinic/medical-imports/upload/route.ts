@@ -1,3 +1,4 @@
+import { invitationById } from "@/lib/invitations/store";
 import { after } from "next/server";
 import { body, json, failure, PortalError, hash } from "@/lib/portal/security";
 import { getStore } from "@/lib/portal/store";
@@ -22,6 +23,14 @@ async function authorization(request: Request) {
   const card = grant
     ? await getStore().appointment(grant.appointment_id)
     : null;
+  const invitation =
+    grant?.origin_kind === "patient" && grant.invitation_id
+      ? await invitationById(grant.invitation_id)
+      : null;
+  const patient =
+    grant?.origin_kind === "patient" && grant.patient_session_hash
+      ? await getStore().session(grant.patient_session_hash)
+      : null;
   if (
     !token ||
     !grant ||
@@ -30,8 +39,20 @@ async function authorization(request: Request) {
     Date.parse(grant.expires_at) <= Date.now() ||
     !card ||
     card.deletion_requested_at ||
-    card.intake_mode !== "clinic" ||
-    card.created_by !== owner.id ||
+    (grant.origin_kind === "patient"
+      ? !invitation ||
+        invitation.revoked_at ||
+        invitation.deleted_at ||
+        invitation.token_hash !== card.token_hash ||
+        card.revoked_at ||
+        Date.parse(card.expires_at) <= Date.now() ||
+        card.intake_mode === "clinic" ||
+        !grant.ai_consent ||
+        !patient ||
+        patient.kind !== "patient" ||
+        patient.appointment_id !== card.id ||
+        Date.parse(patient.expires_at) <= Date.now()
+      : card.intake_mode !== "clinic" || card.created_by !== owner.id) ||
     (await getStore().documents(card.id)).length
   )
     throw new PortalError(
@@ -57,6 +78,11 @@ export async function GET(request: Request) {
       status: imported?.status || "awaiting_collection",
       error_code: imported?.error_code || null,
       configured: personalClaudeConfigured(),
+      language:
+        grant.origin_kind === "patient" && grant.invitation_id
+          ? (await invitationById(grant.invitation_id))?.language || "he"
+          : "en",
+      origin_kind: grant.origin_kind || "personal",
     });
   } catch (error) {
     return failure(error);
@@ -85,8 +111,19 @@ export async function POST(request: Request) {
         records: bundle.records,
         coverage: bundle.coverage,
         claude_consent: grant.ai_consent,
+        invitation_scope:
+          grant.origin_kind === "patient" ? grant.invitation_id : null,
       }),
     );
+    if (
+      grant.origin_kind === "patient" &&
+      !bundle.records.some((source) => source.association_verified)
+    )
+      throw new PortalError(
+        400,
+        "SOURCE_ASSOCIATION_REQUIRED",
+        "נדרשת לפחות רשומה אחת עם הפניה מאומתת למקור בכללית.",
+      );
     const imported = await acceptMedicalImport(
       hash(token),
       fingerprint,

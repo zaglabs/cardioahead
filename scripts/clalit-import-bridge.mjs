@@ -1,6 +1,7 @@
+import { renderCollectorPage } from "./clalit-collector-page.mjs";
 // Loopback-only pairing; upload capability comes from the authenticated owner in CardioAhead.
 import { createServer } from "node:http";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual, createHash } from "node:crypto";
 import {
   collectorState,
   selectedBundle,
@@ -31,16 +32,7 @@ async function input(request) {
   }
   return JSON.parse(text);
 }
-function page(nonce) {
-  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CardioAhead — local collector</title><style>body{font:18px/1.7 system-ui;background:#f3f6ef;color:#183c31;margin:0;padding:clamp(20px,4vw,48px)}main{max-width:1080px;margin:auto;background:white;padding:clamp(20px,4vw,40px);border:1px solid #dce4d7;border-radius:24px}button{font:inherit;cursor:pointer;background:#173f33;color:white;border:0;padding:14px 22px;border-radius:12px}button:disabled{opacity:.5;cursor:wait}.note{background:#f3f6ef;padding:16px;border-radius:14px}.error{color:#9b4025}#heart{display:inline-block;animation:beat 1.35s infinite;transform-origin:center}@keyframes beat{0%,40%,100%{transform:scale(1)}12%{transform:scale(1.18)}22%{transform:scale(.99)}30%{transform:scale(1.12)}}@media(prefers-reduced-motion:reduce){#heart{animation:none}}</style></head><body><main><h1>CardioAhead local collector</h1><p>The collector reads your own Clalit account after you sign in. Original documents remain in Clalit. CardioAhead saves the pre-visit summary, source references and short supporting excerpts.</p><p class="note" id="target">Validating the private connection…</p><p id="counts"></p><fieldset id="sources"><legend>Review the sources to import</legend><div id="manifest"></div></fieldset><p id="status" role="status" aria-live="polite"><span id="heart">♡</span> Preparing the connection.</p><button id="transfer" disabled>Import selected records into CardioAhead</button><p id="error" class="error" role="alert"></p><p>Do not enter your Clalit password, ID or login codes here. After importing, the summary continues in CardioAhead. You can close this window.</p></main><script nonce="${nonce}">
-let token=new URLSearchParams(location.hash.slice(1)).get('token') || '';history.replaceState(null,'','/connect');let inFlight=false,manifestKey='';
-const nonce=${JSON.stringify(nonce)},status=document.getElementById('status'),error=document.getElementById('error'),button=document.getElementById('transfer');
-async function call(path,body){const response=await fetch(path,{method:'POST',headers:{'Content-Type':'application/json','X-Collector-Nonce':nonce},body:JSON.stringify(body)});const data=await response.json();if(!response.ok)throw Error(data.message || 'The connection could not be completed.');return data;}
-function loading(){if(!document.getElementById('heart')){const heart=document.createElement('span');heart.id='heart';heart.textContent='♡ ';heart.setAttribute('aria-hidden','true');status.prepend(heart);}} async function refresh(){if(inFlight)return;try{const data=await call('/status',{token});document.getElementById('target').textContent='Patient card: '+data.target.patient_label+' · '+(data.target.claude_consent?'Claude processing approved':'References only; Claude processing off');document.getElementById('counts').textContent=data.counts.record_count+' source records / '+data.counts.entry_count+' entries collected temporarily. '+data.counts.categories.join(', ');const records=data.manifest || [],key=records.map(record=>record.id).join(',');if(key!==manifestKey){manifestKey=key;const list=document.getElementById('manifest');list.replaceChildren();for(const record of records){const label=document.createElement('label');label.style.display='block';label.style.margin='12px 0';const box=document.createElement('input');box.type='checkbox';box.checked=true;box.value=record.id;box.style.marginInlineEnd='12px';label.append(box,document.createTextNode(record.title+' · '+(record.record_date || 'Date not identified')+' · '+record.entry_count+' entries'+(record.association_verified?'':' · Source association needs review')));list.append(label);}}button.disabled=!data.counts.record_count || data.counts.running || ['received','generating','ready'].includes(data.target.status);status.textContent=data.target.status==='ready'?'Summary saved in CardioAhead. Temporary collected text has been cleared.':data.target.status==='generating'?'Claude is preparing the source-cited draft.':data.target.status==='failed'?'Processing failed. Create a new connection in CardioAhead and collect again.':'Finish signing into Clalit and collecting your own records; then import.';if(data.target.status==='ready')button.disabled=true;if(data.counts.running || ['received','generating'].includes(data.target.status))loading();}catch(reason){error.textContent=reason.message;button.disabled=true;}}
-button.onclick=async()=>{inFlight=true;button.disabled=true;error.textContent='';try{const data=await call('/transfer',{token,source_ids:[...document.querySelectorAll('#manifest input:checked')].map(box=>box.value)});status.textContent=data.queued?'Source references received. Claude processing is starting.':'Source references saved; no AI processing requested.';if(data.queued)loading();}catch(reason){error.textContent=reason.message;}finally{inFlight=false;await refresh();}};void refresh();setInterval(refresh,5000);
-</script></body></html>`;
-}
-export async function startImportBridge(port = 3184) {
+export async function startImportBridge(port = 3184, handlers = {}) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535)
     throw new Error("INVALID_LOOPBACK_PORT");
   const bridgeOrigin = "http://127.0.0.1:" + port;
@@ -62,12 +54,20 @@ export async function startImportBridge(port = 3184) {
           "Referrer-Policy": "no-referrer",
           "X-Content-Type-Options": "nosniff",
         });
-        response.end(page(state.nonce));
+        response.end(
+          renderCollectorPage(state.nonce, Boolean(handlers.openClalit)),
+        );
         return;
       }
       if (
         request.method !== "POST" ||
-        !["/status", "/transfer"].includes(route) ||
+        ![
+          "/status",
+          "/transfer",
+          "/start-clalit",
+          "/collect",
+          "/close",
+        ].includes(route) ||
         request.headers.origin !== bridgeOrigin ||
         !equal(request.headers["x-collector-nonce"], state.nonce)
       ) {
@@ -77,6 +77,12 @@ export async function startImportBridge(port = 3184) {
         return;
       }
       const data = await input(request);
+      if (route === "/close") {
+        clearCollectedRecords();
+        reply(response, 200, { ok: true });
+        if (handlers.close) void handlers.close();
+        return;
+      }
       if (
         typeof data.token !== "string" ||
         !/^[A-Za-z0-9_-]{40,80}$/.test(data.token)
@@ -84,6 +90,29 @@ export async function startImportBridge(port = 3184) {
         reply(response, 401, {
           message:
             "Open the connection from your own patient card in CardioAhead.",
+        });
+        return;
+      }
+      const scope = createHash("sha256").update(data.token).digest("hex");
+      if (state.retired_bindings?.has(scope)) {
+        reply(response, 409, {
+          message:
+            "This connection was replaced. Close this window and use the new connection.",
+        });
+        return;
+      }
+      const differentScope =
+        state.active_binding && state.active_binding !== scope;
+      if (
+        differentScope &&
+        (!handlers.cancel ||
+          collectedCounts().record_count > 0 ||
+          state.running ||
+          state.workflow?.stage === "collecting")
+      ) {
+        reply(response, 409, {
+          message:
+            "Close this collector and restart it before connecting a different invitation.",
         });
         return;
       }
@@ -100,9 +129,49 @@ export async function startImportBridge(port = 3184) {
         target.subject_scope !== "self" ||
         target.provider !== "clalit"
       ) {
+        if (check.status === 401) {
+          clearCollectedRecords();
+          if (handlers.cancel) void handlers.cancel();
+        }
         reply(response, 401, {
           message:
             "The CardioAhead connection expired. Create a new connection in your personal card.",
+        });
+        return;
+      }
+      if (differentScope) {
+        await handlers.cancel();
+        (state.retired_bindings ||= new Set()).add(state.active_binding);
+      }
+      state.active_binding = scope;
+      if (route === "/start-clalit" || route === "/collect") {
+        if (state.running || state.workflow?.stage === "collecting") {
+          reply(response, 409, { message: "Collection is already running." });
+          return;
+        }
+        if (!handlers.openClalit || !handlers.collect) {
+          reply(response, 409, {
+            message:
+              "Start the updated desktop collector to use the guided controls.",
+          });
+          return;
+        }
+        if (route === "/start-clalit") {
+          await handlers.openClalit();
+          reply(response, 200, { ok: true });
+          return;
+        }
+        if (data.own_account !== true) {
+          reply(response, 400, {
+            message: "Confirm that you selected your own Clalit profile.",
+          });
+          return;
+        }
+        state.workflow = { stage: "collecting" };
+        reply(response, 202, { ok: true });
+        void handlers.collect().catch(() => {
+          state.workflow = { stage: "error" };
+          clearCollectedRecords();
         });
         return;
       }
@@ -118,6 +187,7 @@ export async function startImportBridge(port = 3184) {
           target,
           counts: collectedCounts(),
           manifest: collectedManifest(),
+          workflow: state.workflow || { stage: "manual" },
         });
         return;
       }
@@ -126,10 +196,11 @@ export async function startImportBridge(port = 3184) {
           target,
           counts: collectedCounts(),
           manifest: collectedManifest(),
+          workflow: state.workflow || { stage: "manual" },
         });
         return;
       }
-      if (collectedCounts().running) {
+      if (collectedCounts().running || state.workflow?.stage === "collecting") {
         reply(response, 409, {
           message:
             "Collection is still running. Wait for it to finish before importing.",
@@ -173,11 +244,24 @@ export async function startImportBridge(port = 3184) {
 export async function stopImportBridge() {
   const state = collectorState();
   clearCollectedRecords();
-  await new Promise((resolve) =>
-    state.server ? state.server.close(resolve) : resolve(),
-  );
+  if (state.server)
+    await new Promise((resolve) => {
+      const server = state.server,
+        timer = setTimeout(() => {
+          server.closeAllConnections();
+          resolve();
+        }, 2000);
+      server.close(() => {
+        clearTimeout(timer);
+        resolve();
+      });
+      server.closeIdleConnections();
+    });
   state.server = null;
   state.nonce = null;
   state.import_status = null;
+  state.active_binding = null;
+  state.retired_bindings = null;
+  state.workflow = null;
   state.bridge_status_monitor = false;
 }

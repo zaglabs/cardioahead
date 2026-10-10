@@ -1,5 +1,8 @@
 import type { MedicalBundle, MedicalSummary, MedicalSlide } from "./schema.mjs";
 export type MedicalImport = {
+  origin_kind?: "personal" | "patient";
+  invitation_id?: string | null;
+  patient_consent_version?: string | null;
   id: string;
   appointment_id: string;
   owner_id: string;
@@ -25,6 +28,9 @@ export type MedicalImport = {
   completed_at: string | null;
 };
 export type ImportGrant = {
+  origin_kind?: "personal" | "patient";
+  invitation_id?: string | null;
+  patient_session_hash?: string | null;
   token_hash: string;
   appointment_id: string;
   owner_id: string;

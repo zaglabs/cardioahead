@@ -152,6 +152,7 @@ test("English clinic creates English invitation; patient switches language witho
   await patient
     .getByRole("button", { name: "Enter your patient area" })
     .click();
+  await patient.getByRole("button", { name: /Upload Documents/ }).click();
   await patient.getByLabel("Select PDF files").setInputFiles([fixture, second]);
   await expect(
     patient.getByText("2 documents saved", { exact: true }),

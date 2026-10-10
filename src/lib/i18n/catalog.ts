@@ -1,3 +1,4 @@
+import invitations from "./invitations.en.json";
 import clinical from "./clinical.en.json";
 import evidence from "./evidence.en.json";
 import visit from "./visit.en.json";
@@ -8,6 +9,7 @@ import clinic from "./clinic.en.json";
 export type Language = "he" | "en";
 export const LANGUAGE_COOKIE = "cardioahead_language";
 export const english: Record<string, string> = {
+  ...invitations,
   ...common,
   ...publicPages,
   ...patient,
