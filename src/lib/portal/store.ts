@@ -43,6 +43,7 @@ export interface PortalStore {
     actor: string,
     confirmation: string,
   ): Promise<boolean>;
+  rename(id: string, label: string, previous: string): Promise<boolean>;
   review(id: string): Promise<void>;
   audit(value: AuditEvent): Promise<void>;
 }
@@ -240,6 +241,18 @@ export function getStore(): PortalStore {
     },
     async revoke(id) {
       checked(await db.rpc("revoke_invitation", { p_id: id }));
+    },
+    async rename(id, label, previous) {
+      const rows = checked(
+        await db
+          .from("appointments")
+          .update({ patient_label: label })
+          .eq("id", id)
+          .eq("patient_label", previous)
+          .is("deletion_requested_at", null)
+          .select("id"),
+      );
+      return rows?.length === 1;
     },
     async review(id) {
       checked(

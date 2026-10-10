@@ -146,5 +146,12 @@
   "למחוק את המשתמש?": "Delete this user?",
   "חשבון המשתמש והכניסות שלו יימחקו. תיקי המטופלים וההיסטוריה הקלינית יישמרו. כניסה עתידית תדרוש אישור מחדש.": "The user's account and sessions will be deleted. Patient cards and clinical history will be retained. A future sign-in will require approval again.",
   "אישור מחיקת המשתמש": "Confirm user deletion",
-  "גללו הצידה כדי לראות את כל העמודות והפעולות.": "Scroll sideways to see all columns and actions."
+  "גללו הצידה כדי לראות את כל העמודות והפעולות.": "Scroll sideways to see all columns and actions.",
+  "עריכת שם": "Edit name",
+  "עריכת שם המטופל": "Edit patient name",
+  "שמירת שם": "Save name",
+  "שם המטופל עודכן.": "Patient name updated.",
+  "תיקי מטופלים": "Patient cards",
+  "התיק השתנה. רעננו ונסו שוב.": "The card changed. Refresh and try again.",
+  "סגירה": "Close"
 }

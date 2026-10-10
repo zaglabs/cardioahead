@@ -19,14 +19,27 @@ export async function PATCH(
     const input = await body(request);
     if (!(await getStore().appointment(id)))
       throw new PortalError(404, "NOT_FOUND", "הביקור לא נמצא.");
-    if (input.action === "revoke") await getStore().revoke(id);
+    if (input.action === "rename") {
+      const label = text(input.patientLabel, 100);
+      const previous = text(input.previousLabel, 100);
+      if (/[\u0000-\u001f\u007f]/.test(label))
+        throw new PortalError(400, "BAD_REQUEST", "בדקו את הפרטים שהזנתם.");
+      if (!(await getStore().rename(id, label, previous)))
+        throw new PortalError(
+          409,
+          "CARD_CHANGED",
+          "התיק השתנה. רעננו ונסו שוב.",
+        );
+    } else if (input.action === "revoke") await getStore().revoke(id);
     else if (input.action === "review") await getStore().review(id);
     else throw new PortalError(400, "BAD_REQUEST", "בקשה לא תקינה.");
     await getStore().audit({
       event:
         input.action === "revoke"
           ? "staff_revoked_invitation"
-          : "staff_reviewed_appointment",
+          : input.action === "rename"
+            ? "staff_renamed_appointment"
+            : "staff_reviewed_appointment",
       actor_id: staff.id,
       appointment_id: id,
     });

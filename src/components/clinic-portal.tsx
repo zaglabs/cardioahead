@@ -27,6 +27,9 @@ import {
   X,
   Copy,
   Trash2,
+  Pencil,
+  ChevronDown,
+  Users,
 } from "lucide-react";
 import type { AppointmentView, Staff } from "@/lib/portal/types";
 const labels = {
@@ -84,6 +87,21 @@ function ClinicWorkspace({
   const [deleteTarget, setDeleteTarget] = useState<AppointmentView | null>(
     null,
   );
+  const [renameTarget, setRenameTarget] = useState<AppointmentView | null>(
+    null,
+  );
+  const [editedName, setEditedName] = useState("");
+  const [renameError, setRenameError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [listOpen, setListOpen] = useState(true);
+  const renameDialog = useRef<HTMLDialogElement>(null);
+  const renameInput = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (renameTarget) {
+      renameDialog.current?.showModal();
+      renameInput.current?.focus();
+    } else renameDialog.current?.close();
+  }, [renameTarget]);
   const deleteDialog = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     if (deleteTarget) deleteDialog.current?.showModal();
@@ -105,7 +123,11 @@ function ClinicWorkspace({
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
       setAppointments(data.appointments);
-      setSelected((current) => current || data.appointments[0]?.id || null);
+      setSelected((current) =>
+        data.appointments.some((a: AppointmentView) => a.id === current)
+          ? current
+          : data.appointments[0]?.id || null,
+      );
       setError("");
     } catch (e) {
       setError(
@@ -170,6 +192,39 @@ function ClinicWorkspace({
       setBusy(false);
     }
   }
+  async function renameCard(event: React.FormEvent) {
+    event.preventDefault();
+    if (!renameTarget) return;
+    setBusy(true);
+    setRenameError("");
+    try {
+      await api("/api/clinic/appointments/" + renameTarget.id, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "rename",
+          patientLabel: editedName,
+          previousLabel: renameTarget.patient_label,
+        }),
+      });
+      setAppointments((current) =>
+        current.map((a) =>
+          a.id === renameTarget.id
+            ? { ...a, patient_label: editedName.trim() }
+            : a,
+        ),
+      );
+      setRenameTarget(null);
+      setNotice(t("שם המטופל עודכן."));
+      await refresh();
+    } catch (e) {
+      setRenameError(
+        e instanceof Error ? e.message : t("עדכון הביקור לא הושלם."),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   async function deleteCard() {
     if (!deleteTarget) return;
     const target = deleteTarget;
@@ -230,7 +285,9 @@ function ClinicWorkspace({
   const filtered = appointments.filter(
     (a) =>
       (filter === "all" || a.status === filter) &&
-      a.patient_label.includes(query),
+      a.patient_label
+        .toLocaleLowerCase()
+        .includes(query.trim().toLocaleLowerCase()),
   );
   return (
     <div className="clinic-layout">
@@ -271,7 +328,7 @@ function ClinicWorkspace({
               <RefreshCw size={19} />
             </button>
             <button
-              className="button button-dark button-small"
+              className="button button-outline button-small"
               onClick={() => {
                 setFormMode("invitation");
                 setShowForm(!showForm);
@@ -284,7 +341,7 @@ function ClinicWorkspace({
               {t("הזמנה חדשה")}
             </button>
             <button
-              className="button button-outline button-small"
+              className="button button-dark button-small"
               onClick={() => {
                 setFormMode("clinic");
                 setShowForm(true);
@@ -425,6 +482,11 @@ function ClinicWorkspace({
             {t(error)}
           </p>
         )}
+        {notice && (
+          <p className="clinic-notice" role="status">
+            {notice}
+          </p>
+        )}
         <div className="stat-grid">
           <div>
             <span>{t("ביקורים")}</span>
@@ -447,76 +509,100 @@ function ClinicWorkspace({
           </div>
         </div>
         <div className="case-board">
-          <section className="cases-panel" aria-label={t("רשימת ביקורים")}>
-            <div className="search-field">
-              <Search size={17} />
-              <input
-                aria-label={t("חיפוש מטופל")}
-                placeholder={t("חיפוש מטופל")}
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-              />
-            </div>
-            <div className="case-filters">
-              {[
-                { value: "all", label: t("הכול") },
-                { value: "submitted", label: t("התקבל") },
-                { value: "invited", label: t("ממתין") },
-                { value: "reviewed", label: t("נבדק") },
-              ].map((item) => (
-                <button
-                  key={item.value}
-                  className={filter === item.value ? "active" : ""}
-                  onClick={() => setFilter(item.value)}
-                >
-                  {t(item.label)}
-                </button>
-              ))}
-            </div>
-            <div className="case-list">
-              {filtered.map((a) => (
-                <button
-                  className={"case-card " + (selected === a.id ? "active" : "")}
-                  key={a.id}
-                  onClick={() => {
-                    setSelected(a.id);
-                    setTab("documents");
-                  }}
-                >
-                  <span className="case-time">
-                    {a.appointment_at
-                      ? new Date(a.appointment_at).toLocaleDateString(locale, {
-                          day: "numeric",
-                          month: "numeric",
-                        })
-                      : "—"}
-                  </span>
-                  <span className="case-info">
-                    <strong>{a.patient_label}</strong>
-                    <small>
-                      {a.documents.length}
-                      {t(" מסמכים")}
-                    </small>
-                    <span
-                      className={
-                        "badge " +
-                        (a.status === "submitted" ? "badge-ready" : "")
-                      }
-                    >
-                      {statusLabel(a)}
+          <section
+            className={"cases-panel " + (listOpen ? "is-open" : "is-collapsed")}
+            aria-label={t("רשימת ביקורים")}
+          >
+            <button
+              type="button"
+              className="patient-list-toggle"
+              aria-expanded={listOpen}
+              aria-controls="clinic-patient-list"
+              onClick={() => setListOpen(!listOpen)}
+            >
+              <Users size={18} />
+              <span>
+                {t("תיקי מטופלים")} <small>{appointments.length}</small>
+              </span>
+              <ChevronDown size={18} />
+            </button>
+            <div id="clinic-patient-list" className="patient-list-content">
+              <div className="search-field">
+                <Search size={17} />
+                <input
+                  aria-label={t("חיפוש מטופל")}
+                  placeholder={t("חיפוש מטופל")}
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                />
+              </div>
+              <div className="case-filters">
+                {[
+                  { value: "all", label: t("הכול") },
+                  { value: "submitted", label: t("התקבל") },
+                  { value: "invited", label: t("ממתין") },
+                  { value: "reviewed", label: t("נבדק") },
+                ].map((item) => (
+                  <button
+                    key={item.value}
+                    className={filter === item.value ? "active" : ""}
+                    onClick={() => setFilter(item.value)}
+                  >
+                    {t(item.label)}
+                  </button>
+                ))}
+              </div>
+              <div className="case-list">
+                {filtered.map((a) => (
+                  <button
+                    className={
+                      "case-card " + (selected === a.id ? "active" : "")
+                    }
+                    key={a.id}
+                    onClick={() => {
+                      setSelected(a.id);
+                      setTab("documents");
+                      setListOpen(false);
+                    }}
+                  >
+                    <span className="case-time">
+                      {a.appointment_at
+                        ? new Date(a.appointment_at).toLocaleDateString(
+                            locale,
+                            {
+                              day: "numeric",
+                              month: "numeric",
+                            },
+                          )
+                        : "—"}
                     </span>
-                  </span>
-                </button>
-              ))}
-              {!filtered.length && (
-                <p className="empty-state">
-                  {loading
-                    ? t("טוענים את הביקורים…")
-                    : appointments.length
-                      ? t("לא נמצאו ביקורים בסינון הזה.")
-                      : t("עדיין אין ביקורים. צרו הזמנה ראשונה כדי להתחיל.")}
-                </p>
-              )}
+                    <span className="case-info">
+                      <strong>{a.patient_label}</strong>
+                      <small>
+                        {a.documents.length}
+                        {t(" מסמכים")}
+                      </small>
+                      <span
+                        className={
+                          "badge " +
+                          (a.status === "submitted" ? "badge-ready" : "")
+                        }
+                      >
+                        {statusLabel(a)}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+                {!filtered.length && (
+                  <p className="empty-state">
+                    {loading
+                      ? t("טוענים את הביקורים…")
+                      : appointments.length
+                        ? t("לא נמצאו ביקורים בסינון הזה.")
+                        : t("עדיין אין ביקורים. צרו הזמנה ראשונה כדי להתחיל.")}
+                  </p>
+                )}
+              </div>
             </div>
           </section>
           <section className="case-detail" aria-label={t("תיק ביקור")}>
@@ -524,7 +610,25 @@ function ClinicWorkspace({
               <>
                 <div className="detail-heading">
                   <div>
-                    <h2>{active.patient_label}</h2>
+                    <div className="patient-name-heading">
+                      <h2 dir="auto">{active.patient_label}</h2>
+                      {!active.deletion_requested_at && (
+                        <button
+                          type="button"
+                          className="edit-name-button"
+                          disabled={busy}
+                          onClick={() => {
+                            setEditedName(active.patient_label);
+                            setRenameError("");
+                            setNotice("");
+                            setRenameTarget(active);
+                          }}
+                        >
+                          <Pencil size={16} />
+                          {t("עריכת שם")}
+                        </button>
+                      )}
+                    </div>
                     <span>
                       {active.appointment_at
                         ? new Date(active.appointment_at).toLocaleString(
@@ -695,6 +799,70 @@ function ClinicWorkspace({
           </section>
         </div>
       </div>
+      <dialog
+        ref={renameDialog}
+        className="management-confirm rename-card-dialog"
+        aria-labelledby="rename-card-title"
+        onCancel={(event) => {
+          if (busy) event.preventDefault();
+          else setRenameTarget(null);
+        }}
+      >
+        {renameTarget && (
+          <form className="patient-panel portal-form" onSubmit={renameCard}>
+            <div className="dialog-heading">
+              <h2 id="rename-card-title">{t("עריכת שם המטופל")}</h2>
+              <button
+                type="button"
+                className="icon-button"
+                aria-label={t("סגירה")}
+                disabled={busy}
+                onClick={() => setRenameTarget(null)}
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <label>
+              {t("שם / כינוי המטופל")}
+              <input
+                ref={renameInput}
+                dir="auto"
+                value={editedName}
+                onChange={(event) => setEditedName(event.target.value)}
+                required
+                maxLength={100}
+                autoComplete="off"
+                disabled={busy}
+              />
+            </label>
+            {renameError && (
+              <p className="form-error" role="alert">
+                {t(renameError)}
+              </p>
+            )}
+            <div className="staff-actions">
+              <button
+                className="button button-dark"
+                disabled={
+                  busy ||
+                  !editedName.trim() ||
+                  editedName.trim() === renameTarget.patient_label
+                }
+              >
+                {busy ? t("שומרים…") : t("שמירת שם")}
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={busy}
+                onClick={() => setRenameTarget(null)}
+              >
+                {t("חזרה")}
+              </button>
+            </div>
+          </form>
+        )}
+      </dialog>
       <dialog
         ref={deleteDialog}
         className="management-confirm"

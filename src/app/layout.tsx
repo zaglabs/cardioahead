@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { getTranslations } from "@/lib/i18n/server";
 import { LanguageProvider } from "@/components/language-provider";
 import "./globals.css";
+import "./workspace.css";
+import { MobileViewport } from "@/components/mobile-viewport";
 export async function generateMetadata(): Promise<Metadata> {
   const { t } = await getTranslations();
   return {
@@ -18,7 +20,13 @@ export async function generateMetadata(): Promise<Metadata> {
     robots: { index: false, follow: false },
   };
 }
-export const viewport: Viewport = { width: "device-width", initialScale: 1 };
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  minimumScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+};
 export default async function RootLayout({
   children,
 }: {
@@ -29,6 +37,7 @@ export default async function RootLayout({
     <html lang={language} dir={language === "he" ? "rtl" : "ltr"}>
       <body>
         <LanguageProvider initialLanguage={language}>
+          <MobileViewport />
           <a className="skip-link" href="#main">
             {t("דלגו לתוכן")}
           </a>

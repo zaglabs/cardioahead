@@ -308,6 +308,14 @@ export const localStore: PortalStore = {
         });
       }
     }),
+  rename: (id, label, previous) =>
+    localTransaction((s) => {
+      const a = s.appointments.find((v) => v.id === id);
+      if (!a || a.deletion_requested_at || a.patient_label !== previous)
+        return false;
+      a.patient_label = label;
+      return true;
+    }),
   review: (id) =>
     localTransaction((s) => {
       const a = s.appointments.find((a) => a.id === id);
