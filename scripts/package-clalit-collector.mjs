@@ -7,13 +7,16 @@ await fs.mkdir(base, { recursive: true });
 const output = await fs.mkdtemp(path.join(base, "build-")),
   root = path.join(output, "CardioAhead-Collector-Windows");
 await fs.mkdir(path.join(root, "runtime"), { recursive: true });
-const executable = process.argv[2];
+const executable = process.argv[2], standalone = process.argv.includes("--exe");
 if (
   !executable ||
   !path.isAbsolute(executable) ||
   path.basename(executable).toLowerCase() !== "node.exe"
 )
   throw Error("EXPLICIT_NODE_EXECUTABLE_REQUIRED");
+const { spawnSync } = await import("node:child_process");
+const runtimeCheck = spawnSync(executable, ["--version"], { encoding: "utf8", windowsHide: true });
+if (runtimeCheck.status !== 0 || runtimeCheck.stdout.trim() !== "v24.19.0") throw Error("NODE_24_19_REQUIRED");
 await fs.copyFile(executable, path.join(root, "runtime", "node.exe"));
 const scripts = [
   "clalit-app.mjs",
@@ -57,7 +60,7 @@ await fs.writeFile(
   path.join(root, "runtime", "NODE-LICENSE.txt"),
   await license.text(),
 );
-await fs.writeFile(
+if (!standalone) await fs.writeFile(
   path.join(root, "Start CardioAhead.cmd"),
   [
     "@echo off",
@@ -70,6 +73,15 @@ await fs.writeFile(
   path.join(root, "Read me.html"),
   '<!doctype html><html lang="he" dir="rtl"><meta charset="utf-8"><title>CardioAhead</title><style>body{font:21px/1.9 Arial;max-width:900px;padding:35px;margin:auto;color:#234536}h1{font-size:32px}</style><h1>ייבוא מכללית — CardioAhead</h1><ol><li>חלצו את התיקייה למחשב Windows שבו מותקן Chrome.</li><li>פתחו את הקובץ <b dir="ltr">Start CardioAhead</b>.</li><li>בקישור ההזמנה שקיבלתם מהמרפאה, בחרו בייבוא מכללית, אשרו את ההסכמה ולחצו על פתיחת החיבור.</li><li>התחברו לכללית בעצמכם ובחרו את הפרופיל שלכם. חזרו לחלון האספן, אספו את הרשומות ובדקו את המקורות לפני ייבוא.</li></ol><p>אין להזין סיסמה או קוד כללית באתר CardioAhead. האיסוף חלקי והמסמכים המקוריים נשארים בכללית.</p><hr><div lang="en" dir="ltr"><h1>CardioAhead Clalit import</h1><ol><li>Extract this folder on a Windows computer with Chrome installed.</li><li>Open <b>Start CardioAhead</b>.</li><li>In your clinic invitation choose Clalit import, approve the consent and open the connection.</li><li>Sign into Clalit yourself and select your own profile. Return to the collector, collect supported records, then review before importing.</li></ol><p>The first setup may need help from the clinic or a family member. This is a limited desktop pilot, not a phone integration. Your Clalit password and login codes are never entered into CardioAhead. Original documents remain in Clalit.</p></div>',
 );
+if (standalone) {
+  const readme = path.join(root, "Read me.html");
+  const html = (await fs.readFile(readme, "utf8"))
+    .replace("חלצו את התיקייה למחשב Windows שבו מותקן Chrome.", "הורידו את CardioAhead-Collector.exe למחשב Windows שבו מותקן Chrome.")
+    .replace('פתחו את הקובץ <b dir="ltr">Start CardioAhead</b>.', 'פתחו את <b dir="ltr">CardioAhead-Collector.exe</b>. חלון האספן ייפתח אוטומטית ב־Chrome.')
+    .replace("Extract this folder on a Windows computer with Chrome installed.", "Download CardioAhead-Collector.exe on a Windows 10/11 x64 computer with Chrome installed.")
+    .replace("Open <b>Start CardioAhead</b>.", "Open <b>CardioAhead-Collector.exe</b>. The collector opens automatically in Chrome.");
+  await fs.writeFile(readme, html);
+}
 const manifest = [];
 async function walk(directory) {
   for (const entry of await fs.readdir(directory, { withFileTypes: true })) {
@@ -99,7 +111,8 @@ await fs.writeFile(
   path.join(root, "manifest.json"),
   JSON.stringify(
     {
-      version: "0.2.0",
+      version: "0.3.0",
+      distribution: standalone ? "exe" : "zip",
       runtime: "Node.js 24.19.0",
       platform: "Windows x64; installed Google Chrome",
       files: manifest,

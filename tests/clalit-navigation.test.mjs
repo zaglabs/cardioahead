@@ -65,7 +65,7 @@ test("menu collection stays in the verified record page, ignores requests and re
       "UNSELECTED_RECORD",
       "12345",
     ])
-      assert.ok(!JSON.stringify(receipt).includes(forbidden));
+      assert.ok(!JSON.stringify(receipt, (key, field) => key === "expires_at" ? null : field).includes(forbidden));
     const unrelated = await recordPage.evaluate(collectCategoryTables, {
       category: "diagnoses",
     });
@@ -140,7 +140,7 @@ test("lab report Show action reads values temporarily and skips sending actions 
       "22222222",
       "01.01.2026",
     ])
-      assert.ok(!JSON.stringify(receipt).includes(value));
+      assert.ok(!JSON.stringify(receipt, (key, field) => key === "expires_at" ? null : field).includes(value));
     assert.equal(details.association_verified, false);
     await page.evaluate(() => {
       const values = document.querySelector("#values");

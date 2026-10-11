@@ -177,8 +177,8 @@ export function PatientClalitImport({
               </strong>
               <p>
                 {w(
-                  "בהפעלה הראשונה הורידו את התיקייה, חלצו אותה ופתחו את ״Start CardioAhead״. אין צורך להתקין תוכנת פיתוח.",
-                  "The first time, download and extract the folder, then open “Start CardioAhead”. No development tools are needed.",
+                  "הורידו את הקובץ CardioAhead-Collector.exe ופתחו אותו. חלון האספן ייפתח אוטומטית ב־Chrome. אין צורך לחלץ תיקייה.",
+                  "Download CardioAhead-Collector.exe and open it. The collector window opens automatically in Chrome. No folder extraction is needed.",
                 )}
               </p>
               <a
@@ -188,7 +188,7 @@ export function PatientClalitImport({
                 rel="noopener noreferrer"
               >
                 <Download size={21} />
-                {w("הורדת האספן למחשב", "Download the desktop collector")}
+                {w("הורדת CardioAhead למחשב (.exe)", "Download CardioAhead (.exe)")}
               </a>
             </li>
             <li>

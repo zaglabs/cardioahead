@@ -4,7 +4,7 @@ Migration 011 adds private invitation history, encrypted link/code recovery, act
 
 Patients enter their invitation PIN, then choose Upload Documents or Import from Clalit. Manual uploads remain restricted to the reviewed fictional PDFs during the pilot. The Clalit option is a Windows/Chrome desktop pilot with a portable collector. Phone users get an explicit explanation and the upload/help alternatives.
 
-The desktop download includes Node.js 24.19.0, Playwright Core and their licenses. It includes only a source whitelist and dependencies: no environment variables, API keys, medical records, cookies or test data. Extract the folder and open Start CardioAhead. The first setup may require clinic/family assistance. The launcher opens the private local UI without requiring terminal commands or development tools.
+The desktop download includes Node.js 24.19.0, Playwright Core and their licenses. It includes only a source whitelist and dependencies: no environment variables, API keys, medical records, cookies or test data. Download and open CardioAhead-Collector.exe. The signed Node runtime and whitelisted application files are unpacked automatically into a versioned user-local application folder; there is no extraction step or administrator installer. The first setup may require clinic/family assistance. The launcher opens the private local UI without requiring terminal commands or development tools.
 
 The patient signs into Clalit themselves, attests that the selected profile is their own, starts collection, reviews the source names/dates and selects the records to import. The collector uses the verified read-only adapters; coverage remains partial. It never calls hidden provider APIs, exports cookies, enters passwords or bypasses access barriers. Original documents remain with the provider.
 
@@ -27,7 +27,23 @@ Existing invitation tokens/PINs were hashes only, so migration 011 cannot recove
 Production flags:
 - CARDIOAHEAD_ENABLE_PATIENT_CLALIT_PILOT=true enables the guided invitation path.
 - ANTHROPIC_API_KEY stays a Sensitive server-only Production variable.
-- CARDIOAHEAD_COLLECTOR_DOWNLOAD_URL can override the verified HTTPS release asset URL; the default points to the project release collector-v0.2.0.
+- CARDIOAHEAD_COLLECTOR_DOWNLOAD_URL can override the verified HTTPS release asset URL; the default points to the project release collector-v0.3.0/CardioAhead-Collector.exe.
 - CARDIOAHEAD_SESSION_SECRET protects PIN digests and encrypted invitation credentials. A secret rotation requires replacing existing invitation links.
 
 No original-document retention or blanket zero-retention/compliance guarantee is implied. The clinic remains responsible for its approved processing, access and clinical retention arrangements.
+## Single-file Windows collector
+
+Release 0.3.0 provides a Windows x64 .exe for the invitation download. Requires Windows 10/11 with the bundled-compatible .NET Framework and installed Chrome. It launches the same private browser/loopback collector. There is no startup entry, system service, browser extension, registry registration or privilege elevation.
+
+The launcher embeds a SHA-256-bound payload and manifest and verifies every application file before executing the signed Node.js 24.19.0 binary. It refuses changed, extra or linked application files and paths escaping its staging directory. Application files are cached under %LOCALAPPDATA%/CardioAhead/Collector; this code cache does not contain medical records, session cookies or API keys. The normal collector still clears its temporary source buffer and browser contexts on close/expiry.
+
+The current launcher is unsigned. Windows/SmartScreen may display an unknown-publisher or reputation warning. Do not ask patients to disable security controls. A trusted signing certificate and a signed release should be obtained for broader patient distribution. Hash checks protect the packaged payload against accidental modification; they do not replace publisher signing.
+
+Build from the local Windows checkout with dependencies:
+
+    ./scripts/package-clalit-exe.ps1 -NodeExecutable C:/path/to/signed/node.exe
+    ./tests/collector-exe.test.ps1
+
+Use an OpenJS-signed Node.js 24.19.0 executable. The builder creates .collector-dist/latest-exe.json, the executable, its checksum file and whitelisted staging files. Never package the complete workspace. The integrity self-test uses a dedicated temporary code-only folder and does not open a browser or collect records.
+
+Verification also includes launching the actual .exe, observing its unpaired collector page and closing through the nonce-protected local control. No Clalit login or records are used in this smoke test. Invitation tracking remains based on actual accepted records and completed processing, rather than downloads or app launches.
