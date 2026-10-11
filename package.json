@@ -12,6 +12,8 @@
     "test:database": "node --test tests/database.test.mjs tests/clinical-schema.test.mjs tests/evidence-schema.test.mjs tests/evidence-database.test.mjs tests/evidence-retrieval.test.mjs tests/visit-database.test.mjs tests/ai-settings.test.mjs tests/medical-import.test.mjs tests/invitations.test.mjs tests/invitation-crypto.test.mjs",
     "clalit:pilot": "node scripts/clalit-pilot.mjs",
     "clalit:app": "node scripts/clalit-app.mjs",
+    "clalit:remote": "node scripts/clalit-remote-pilot.mjs",
+    "test:clalit-remote": "node --test tests/clalit-remote.test.mjs",
     "test:clalit": "node --test tests/clalit-reader.test.mjs tests/clalit-navigation.test.mjs tests/clalit-bridge.test.mjs tests/clalit-guided.test.mjs"
   },
   "engines": {
