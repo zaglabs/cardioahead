@@ -27,15 +27,15 @@ Existing invitation tokens/PINs were hashes only, so migration 011 cannot recove
 Production flags:
 - CARDIOAHEAD_ENABLE_PATIENT_CLALIT_PILOT=true enables the guided invitation path.
 - ANTHROPIC_API_KEY stays a Sensitive server-only Production variable.
-- CARDIOAHEAD_COLLECTOR_DOWNLOAD_URL can override the verified HTTPS release asset URL; the default points to the project release collector-v0.3.0/CardioAhead-Collector.exe.
+- CARDIOAHEAD_COLLECTOR_DOWNLOAD_URL can override the verified HTTPS release asset URL; the default points to the project release collector-v0.4.0/CardioAhead-Collector.exe.
 - CARDIOAHEAD_SESSION_SECRET protects PIN digests and encrypted invitation credentials. A secret rotation requires replacing existing invitation links.
 
 No original-document retention or blanket zero-retention/compliance guarantee is implied. The clinic remains responsible for its approved processing, access and clinical retention arrangements.
 ## Single-file Windows collector
 
-Release 0.3.0 provides a Windows x64 .exe for the invitation download. Requires Windows 10/11 with the bundled-compatible .NET Framework and installed Chrome. It launches the same private browser/loopback collector. There is no startup entry, system service, browser extension, registry registration or privilege elevation.
+Release 0.4.0 provides a Windows x64 .exe for the invitation download. Requires Windows 10/11 with the bundled-compatible .NET Framework and installed Chrome. It launches the same private browser/loopback collector. There is no startup entry, system service, browser extension, registry registration or privilege elevation.
 
-The launcher embeds a SHA-256-bound payload and manifest and verifies every application file before executing the signed Node.js 24.19.0 binary. It refuses changed, extra or linked application files and paths escaping its staging directory. Application files are cached under %LOCALAPPDATA%/CardioAhead/Collector; this code cache does not contain medical records, session cookies or API keys. The normal collector still clears its temporary source buffer and browser contexts on close/expiry.
+The launcher embeds a SHA-256-bound payload and manifest and verifies every application file before executing the signed Node.js 24.19.0 binary. It refuses changed, extra or linked application files and paths escaping its staging directory. Each managed launch creates an owned session folder under %LOCALAPPDATA%/CardioAhead/Collector. Application code and private browser temporary files are confined to that session. No credentials or medical records are bundled into the download. The normal collector still clears its temporary source buffer and browser contexts on close/expiry.
 
 The current launcher is unsigned. Windows/SmartScreen may display an unknown-publisher or reputation warning. Do not ask patients to disable security controls. A trusted signing certificate and a signed release should be obtained for broader patient distribution. Hash checks protect the packaged payload against accidental modification; they do not replace publisher signing.
 
@@ -47,3 +47,12 @@ Build from the local Windows checkout with dependencies:
 Use an OpenJS-signed Node.js 24.19.0 executable. The builder creates .collector-dist/latest-exe.json, the executable, its checksum file and whitelisted staging files. Never package the complete workspace. The integrity self-test uses a dedicated temporary code-only folder and does not open a browser or collect records.
 
 Verification also includes launching the actual .exe, observing its unpaired collector page and closing through the nonce-protected local control. No Clalit login or records are used in this smoke test. Invitation tracking remains based on actual accepted records and completed processing, rather than downloads or app launches.
+## Automatic cleanup in release 0.4.0
+
+The downloaded executable remains available for reuse. Its unpacked working folder and private browser temporary folder are removed after the collector process closes. The user may close manually; the running session also closes at 45 minutes. After an accepted transfer, temporary source text is cleared immediately. An independent, scoped metadata check waits for a ready summary before scheduling automatic close. Queued, generating, failed and unverified responses do not establish completion. A later collection or a different invitation cannot be closed by an old completion receipt.
+
+Cleanup is restricted to explicitly owned session directories with a matching marker. Absolute paths and every tree entry are checked; reparse points and unowned paths are rejected. Active child processes are preserved. Locked cleanup retains ownership metadata for a retry; abandoned inactive sessions are checked on the next launch. No startup task or system service is installed. Cleanup cannot run while the computer is powered off, and it does not promise forensic erasure.
+
+The native executable sets TEMP/TMP to its private session folder, including the browser's ephemeral profile/artifact locations. Patient-facing file-cleanup wording is enabled only for this managed executable; running source scripts or legacy ZIP launchers does not claim that workspace files are removed. Earlier downloaded executables do not gain these features automatically; use the 0.4.0 download.
+
+Native tests cover removing owned working files, leaving unrelated files and the downloaded executable intact, retaining active process folders and recovering locked cleanup. The actual packaged executable is also launched unpaired, closed through its nonce-protected control, and verified to have removed its own session directory. Clinical source text and summaries are never used in those packaging tests. Existing server-side clinical records and report retention are unaffected.

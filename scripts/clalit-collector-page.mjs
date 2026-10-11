@@ -1,4 +1,4 @@
-function client(nonce, interactive) {
+function client(nonce, interactive, managedCleanup) {
   const fragment = new URLSearchParams(location.hash.slice(1)),
     token = fragment.get("token") || "";
   let language = fragment.get("lang") === "en" ? "en" : "he",
@@ -45,6 +45,10 @@ function client(nonce, interactive) {
   $("limits").textContent = w(
     "האיסוף חלקי: לא כל הדוחות נתמכים. המרפאה מקבלת סיכום, הפניות וקטעי ראיה קצרים. פתיחת כללית לבדה אינה מעבירה מידע.",
     "Collection is partial: not all reports are supported. The clinic receives a summary, references and short evidence excerpts. Opening Clalit alone does not send information.",
+  );
+  if (managedCleanup) $("limits").textContent += w(
+    " אחרי ייבוא שהושלם, סגירה או 45 דקות, האספן נסגר וקובצי העבודה שלו נמחקים. קובץ ההפעלה שהורדתם נשאר לשימוש חוזר.",
+    " After a completed import, Close or the 45-minute limit, the collector closes and removes its working files. Your downloaded .exe remains available."
   );
   $("controls").hidden = !interactive;
   function setStatus(text, loading = false) {
@@ -149,8 +153,8 @@ function client(nonce, interactive) {
       if (ready)
         setStatus(
           w(
-            "הייבוא הושלם. הסיכום נשמר בתיק המרפאה. המידע הזמני נמחק.",
-            "Import complete. The summary is saved in the clinic record. Temporary source text has been cleared.",
+            "הייבוא הושלם. הסיכום נשמר בתיק המרפאה והמידע הזמני נמחק. האספן ייסגר.",
+            "Import complete. The summary is saved in the clinic record. Temporary source text has been cleared. The collector will close.",
           ),
         );
       else if (processing)
@@ -204,6 +208,7 @@ function client(nonce, interactive) {
             "The clinic connection is ready. Open Clalit to start.",
           ),
         );
+      if (ready && data.cleanup_pending) closed = true;
     } catch (reason) {
       $("error").textContent = reason.message;
       $("transfer").disabled = true;
@@ -253,7 +258,7 @@ function client(nonce, interactive) {
   void refresh();
   setInterval(refresh, 5000);
 }
-export function renderCollectorPage(nonce, interactive) {
+export function renderCollectorPage(nonce, interactive, managedCleanup = false) {
   const html =
     '<!doctype html><html lang="he" dir="rtl"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CardioAhead — Clalit collector</title><style>body{font:20px/1.8 system-ui;background:#f4f7ee;color:#1b4032;margin:0;padding:clamp(18px,4vw,48px)}main{max-width:1000px;margin:auto;background:#fff;padding:clamp(23px,4vw,45px);border:1px solid #dbe5d2;border-radius:26px}h1{font-size:clamp(28px,4vw,38px);line-height:1.35}button{font:inherit;cursor:pointer;background:#214b38;color:#fff;border:0;padding:17px 25px;border-radius:13px;min-height:60px;display:inline-flex;align-items:center;justify-content:center;gap:12px}button:disabled{opacity:.48;cursor:default}label{display:flex;align-items:flex-start;gap:15px}input[type=checkbox]{width:25px;height:25px;min-width:25px;margin-top:6px;accent-color:#214b38}.note{background:#f2f6e9;padding:20px;border-radius:17px}.error{color:#a34126}.source{padding:17px;border:1px solid #dfe7d6;border-radius:14px;margin-block:12px}fieldset{border:1px solid #dce6d1;border-radius:19px;padding:21px}legend{padding:8px;font-weight:650}#controls{display:grid;gap:24px;margin-block:25px}#controls[hidden]{display:none}#status{margin-block:23px}#close{background:#f3f6ec;color:#315339;margin-top:25px;width:100%}.heart{display:inline-block;animation:beat 1.35s infinite;transform-origin:center;color:#6f885e;font-size:34px}@keyframes beat{0%,40%,100%{transform:scale(1)}12%{transform:scale(1.18)}22%{transform:scale(.99)}30%{transform:scale(1.12)}}@media(prefers-reduced-motion:reduce){.heart{animation:none}}@media(max-width:650px){body{font-size:19px}button{width:100%}}</style></head><body><main><h1 id="title"></h1><p id="intro"></p><p class="note" id="target"></p><section id="controls"><button id="start"></button><label><input id="own" type="checkbox"><span id="own-label"></span></label><button id="collect" disabled></button></section><p id="counts"></p><fieldset id="sources" hidden><legend id="legend"></legend><div id="manifest"></div></fieldset><p id="status" role="status" aria-live="polite"></p><button id="transfer" disabled></button><p id="error" class="error" role="alert"></p><p id="limits" class="note"></p><button id="close"></button></main>';
   return (
@@ -266,6 +271,8 @@ export function renderCollectorPage(nonce, interactive) {
     JSON.stringify(nonce) +
     "," +
     JSON.stringify(interactive) +
+    "," +
+    JSON.stringify(managedCleanup) +
     ");</script></body></html>"
   );
 }

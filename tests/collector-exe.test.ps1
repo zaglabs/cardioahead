@@ -27,3 +27,8 @@ foreach ($taskFile in $taskManifest.files) {
   if ($taskFile.path -match '(^|/)(\.env|\.git|tmp|test-results|state\.json|storage-state\.json|\.codex-remote-attachments)(/|$)' -or $taskFile.path -match 'clalit-remote|clalit-pilot|Start CardioAhead.cmd') { throw 'Unexpected private/development file in executable payload.' }
 }
 @{ executable_checked=$true; files_verified=$taskRestored.report.files_verified; runtime=$taskRestored.report.runtime; tampered_file_rejected=$true; records_collected=0; browser_opened=$false; unsigned_test_build=$true } | ConvertTo-Json -Compress
+$taskCleanupRun = Start-Process -FilePath $taskExe -ArgumentList '--cleanup-self-test' -WindowStyle Hidden -Wait -PassThru
+if ($taskCleanupRun.ExitCode -ne 0) { throw 'Native cleanup self-test failed.' }
+$taskCleanup = Get-Content -LiteralPath (Join-Path $taskExeDirectory 'cleanup-self-test.json') -Raw | ConvertFrom-Json
+if (-not $taskCleanup.owned_folder_removed -or -not $taskCleanup.locked_cleanup_retried -or -not $taskCleanup.active_process_preserved -or -not $taskCleanup.unowned_files_preserved -or -not $taskCleanup.downloaded_executable_preserved) { throw 'Cleanup safeguards failed.' }
+$taskCleanup | ConvertTo-Json -Compress

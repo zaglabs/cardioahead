@@ -1,3 +1,4 @@
+import { startCompletionCheck, stopCompletionCheck } from "./clalit-completion.mjs";
 import { renderCollectorPage } from "./clalit-collector-page.mjs";
 // Loopback-only pairing; upload capability comes from the authenticated owner in CardioAhead.
 import { createServer } from "node:http";
@@ -32,7 +33,7 @@ async function input(request) {
   }
   return JSON.parse(text);
 }
-export async function startImportBridge(port = 3184, handlers = {}) {
+export async function startImportBridge(port = 3184, handlers = {}, lifecycle = {}) {
   if (!Number.isInteger(port) || port < 1024 || port > 65535)
     throw new Error("INVALID_LOOPBACK_PORT");
   const bridgeOrigin = "http://127.0.0.1:" + port;
@@ -55,7 +56,7 @@ export async function startImportBridge(port = 3184, handlers = {}) {
           "X-Content-Type-Options": "nosniff",
         });
         response.end(
-          renderCollectorPage(state.nonce, Boolean(handlers.openClalit)),
+          renderCollectorPage(state.nonce, Boolean(handlers.openClalit), lifecycle.managedCleanup === true),
         );
         return;
       }
@@ -140,6 +141,7 @@ export async function startImportBridge(port = 3184, handlers = {}) {
         return;
       }
       if (differentScope) {
+        stopCompletionCheck();
         await handlers.cancel();
         (state.retired_bindings ||= new Set()).add(state.active_binding);
       }
@@ -187,6 +189,7 @@ export async function startImportBridge(port = 3184, handlers = {}) {
           target,
           counts: collectedCounts(),
           manifest: collectedManifest(),
+          cleanup_pending: Boolean(state.cleanup_pending),
           workflow: state.workflow || { stage: "manual" },
         });
         return;
@@ -196,6 +199,7 @@ export async function startImportBridge(port = 3184, handlers = {}) {
           target,
           counts: collectedCounts(),
           manifest: collectedManifest(),
+          cleanup_pending: Boolean(state.cleanup_pending),
           workflow: state.workflow || { stage: "manual" },
         });
         return;
@@ -223,6 +227,8 @@ export async function startImportBridge(port = 3184, handlers = {}) {
         });
         return;
       }
+      // Accepted processing is not completion. Poll the scoped server receipt before automatic close.
+      startCompletionCheck(data.token, handlers, lifecycle);
       // The server has accepted its transient processing copy; erase local source text now.
       clearCollectedRecords();
       reply(response, 200, receipt);
@@ -242,6 +248,7 @@ export async function startImportBridge(port = 3184, handlers = {}) {
   return { port, running: true };
 }
 export async function stopImportBridge() {
+  stopCompletionCheck();
   const state = collectorState();
   clearCollectedRecords();
   if (state.server)

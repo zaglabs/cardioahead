@@ -177,8 +177,8 @@ export function PatientClalitImport({
               </strong>
               <p>
                 {w(
-                  "הורידו את הקובץ CardioAhead-Collector.exe ופתחו אותו. חלון האספן ייפתח אוטומטית ב־Chrome. אין צורך לחלץ תיקייה.",
-                  "Download CardioAhead-Collector.exe and open it. The collector window opens automatically in Chrome. No folder extraction is needed.",
+                  "הורידו את הקובץ CardioAhead-Collector.exe ופתחו אותו. חלון האספן ייפתח אוטומטית ב־Chrome. אין צורך לחלץ תיקייה. אחרי ייבוא שהושלם, סגירה או 45 דקות, קובצי העבודה יימחקו אוטומטית. הקובץ שהורדתם יישאר לשימוש חוזר.",
+                  "Download CardioAhead-Collector.exe and open it. The collector window opens automatically in Chrome. No folder extraction is needed. Working files are cleaned up after a completed import, Close or 45 minutes. Your downloaded file stays available for reuse.",
                 )}
               </p>
               <a

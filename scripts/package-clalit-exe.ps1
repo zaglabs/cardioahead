@@ -24,6 +24,6 @@ if ($LASTEXITCODE -ne 0) { throw 'Executable compilation failed.' }
 $taskExeHash = (Get-FileHash -LiteralPath $taskExe -Algorithm SHA256).Hash.ToLowerInvariant()
 $taskSums = Join-Path $taskLatest.output 'SHA256SUMS.txt'
 [IO.File]::WriteAllText($taskSums, $taskExeHash + '  CardioAhead-Collector.exe' + "`n", [Text.UTF8Encoding]::new($false))
-$taskResult = @{ executable=$taskExe; sha256=$taskExeHash; bytes=(Get-Item -LiteralPath $taskExe).Length; payload_root=$taskRoot; sums=$taskSums; version='0.3.0'; signed=$false }
+$taskResult = @{ executable=$taskExe; sha256=$taskExeHash; bytes=(Get-Item -LiteralPath $taskExe).Length; payload_root=$taskRoot; sums=$taskSums; version='0.4.0'; signed=$false }
 $taskResult | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $taskBase 'latest-exe.json') -Encoding utf8
 $taskResult | ConvertTo-Json -Compress

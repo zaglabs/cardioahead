@@ -14,7 +14,7 @@
     "clalit:app": "node scripts/clalit-app.mjs",
     "clalit:remote": "node scripts/clalit-remote-pilot.mjs",
     "test:clalit-remote": "node --test tests/clalit-remote.test.mjs",
-    "test:clalit": "node --test tests/clalit-reader.test.mjs tests/clalit-navigation.test.mjs tests/clalit-bridge.test.mjs tests/clalit-guided.test.mjs"
+    "test:clalit": "node --test tests/clalit-reader.test.mjs tests/clalit-navigation.test.mjs tests/clalit-bridge.test.mjs tests/clalit-guided.test.mjs tests/clalit-completion.test.mjs"
   },
   "engines": {
     "node": "24.x"

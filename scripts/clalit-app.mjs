@@ -8,9 +8,10 @@ try {
   await app.openHome();
 } catch {
   // Do not print browser errors, URLs, credentials or medical content.
-  console.error("COLLECTOR_START_FAILED");
+  const intentionalClose = app?.isClosing();
+  if (!intentionalClose) console.error("COLLECTOR_START_FAILED");
   await app?.close();
-  process.exitCode = 1;
+  process.exitCode = intentionalClose ? 0 : 1;
 }
 process.once("SIGINT", () => void app?.close());
 process.once("SIGTERM", () => void app?.close());

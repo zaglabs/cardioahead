@@ -45,7 +45,7 @@ export async function GET(request: Request) {
         ),
       download_url:
         process.env.CARDIOAHEAD_COLLECTOR_DOWNLOAD_URL ||
-        "https://github.com/zaglabs/cardioahead/releases/download/collector-v0.3.0/CardioAhead-Collector.exe",
+        "https://github.com/zaglabs/cardioahead/releases/download/collector-v0.4.0/CardioAhead-Collector.exe",
     });
   } catch (error) {
     return failure(error);

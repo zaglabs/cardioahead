@@ -20,6 +20,7 @@ if (runtimeCheck.status !== 0 || runtimeCheck.stdout.trim() !== "v24.19.0") thro
 await fs.copyFile(executable, path.join(root, "runtime", "node.exe"));
 const scripts = [
   "clalit-app.mjs",
+  "clalit-completion.mjs",
   "clalit-collector-runtime.mjs",
   "clalit-collector-page.mjs",
   "clalit-import-bridge.mjs",
@@ -111,7 +112,7 @@ await fs.writeFile(
   path.join(root, "manifest.json"),
   JSON.stringify(
     {
-      version: "0.3.0",
+      version: "0.4.0",
       distribution: standalone ? "exe" : "zip",
       runtime: "Node.js 24.19.0",
       platform: "Windows x64; installed Google Chrome",

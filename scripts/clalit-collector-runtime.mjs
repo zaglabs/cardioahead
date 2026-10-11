@@ -17,12 +17,26 @@ export async function createClalitCollector({
   launchOptions = { channel: "chrome", headless: false },
   port = 3184,
   browserType = chromium,
+  sessionMs = 45 * 60000,
+  completionPollMs = 5000,
+  completionGraceMs = 10000,
+  managedCleanup = process.env.CARDIOAHEAD_EPHEMERAL_COLLECTOR === "1",
 } = {}) {
   let browser = null,
     medical = null,
+    launch = null,
+    closePromise = null,
     closing = false,
     timeout;
   const state = collectorState();
+  async function ensureBrowser() {
+    if (closing) throw Error("COLLECTOR_CLOSED");
+    if (!browser) {
+      launch ||= browserType.launch(launchOptions).then((created) => { browser = created; return created; });
+      await launch;
+    }
+    if (closing) throw Error("COLLECTOR_CLOSED");
+  }
   async function reset() {
     clearCollectedRecords();
     await medical?.close().catch(() => {});
@@ -30,17 +44,22 @@ export async function createClalitCollector({
     state.workflow = { stage: "idle" };
   }
   async function close() {
-    if (closing) return;
+    if (closePromise) return closePromise;
     closing = true;
     clearTimeout(timeout);
     clearCollectedRecords();
-    await reset();
-    await browser?.close().catch(() => {});
-    await stopImportBridge();
+    closePromise = (async () => {
+      // Startup may still be creating Chrome. Finish that operation before shutdown and disk cleanup.
+      await launch?.catch(() => {});
+      await reset();
+      await browser?.close().catch(() => {});
+      await stopImportBridge();
+    })();
+    return closePromise;
   }
   const handlers = {
     async openClalit() {
-      if (!browser) browser = await browserType.launch(launchOptions);
+      await ensureBrowser();
       if (!medical)
         medical = await browser.newContext({ acceptDownloads: false });
       if (!medical.pages().length) {
@@ -75,13 +94,14 @@ export async function createClalitCollector({
     cancel: reset,
     close,
   };
-  await startImportBridge(port, handlers);
-  timeout = setTimeout(() => void close(), 45 * 60000);
+  await startImportBridge(port, handlers, { pollIntervalMs: completionPollMs, completionGraceMs, managedCleanup });
+  timeout = setTimeout(() => void close(), sessionMs);
   return {
     handlers,
     close,
+    isClosing: () => closing,
     openHome: async () => {
-      if (!browser) browser = await browserType.launch(launchOptions);
+      await ensureBrowser();
       const context = await browser.newContext({ acceptDownloads: false });
       const page = await context.newPage();
       await page.goto("http://127.0.0.1:" + port + "/connect");
